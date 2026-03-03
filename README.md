@@ -24,6 +24,21 @@ Startup data loading is controlled by:
 
 Cards are bulk inserted into `lorcana_cards` using `executemany`.
 
+## Quick start (no clone required)
+
+The server is published to [GHCR](https://github.com/danielenricocahall/lorcana-mcp/pkgs/container/lorcana-mcp) and the [MCP Registry](https://registry.modelcontextprotocol.io/?q=lorcana). Pull and run it directly:
+
+```bash
+docker pull ghcr.io/danielenricocahall/lorcana-mcp:1.0.0
+
+docker run --rm -i \
+  -e LORCANA_STORAGE_BACKEND=sqlite \
+  -e LORCANA_DB_PATH=/data/cards.db \
+  -e LORCANA_SKIP_IF_DB_EXISTS=true \
+  -v lorcana_mcp_data:/data \
+  ghcr.io/danielenricocahall/lorcana-mcp:1.0.0
+```
+
 ## Run locally (stdio MCP)
 ```bash
 uv run python main.py
@@ -83,7 +98,32 @@ Notes:
 }
 ```
 
-### Docker process (Claude Desktop-style)
+### Published image — GHCR (Claude Desktop-style, no clone required)
+```json
+{
+  "mcpServers": {
+    "lorcana": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e",
+        "LORCANA_STORAGE_BACKEND=sqlite",
+        "-e",
+        "LORCANA_DB_PATH=/data/cards.db",
+        "-e",
+        "LORCANA_SKIP_IF_DB_EXISTS=true",
+        "-v",
+        "lorcana_mcp_data:/data",
+        "ghcr.io/danielenricocahall/lorcana-mcp:1.0.0"
+      ]
+    }
+  }
+}
+```
+
+### Docker process (Claude Desktop-style, locally built)
 ```json
 {
   "mcpServers": {
@@ -120,13 +160,23 @@ Notes:
 }
 ```
 
-### Via the Claude CLI (global)
+### Via the Claude CLI — published image (global, no clone required)
 ```shell
-  claude mcp add --scope user \
-    -e LORCANA_STORAGE_BACKEND=sqlite \
-    -e LORCANA_DB_PATH=/data/cards.db \
-    -e LORCANA_SKIP_IF_DB_EXISTS=true \
-    -- lorcana docker run --rm -i -v lorcana_mcp_data:/data lorcana-mcp:latest # or preferred way
+claude mcp add --scope user \
+  -e LORCANA_STORAGE_BACKEND=sqlite \
+  -e LORCANA_DB_PATH=/data/cards.db \
+  -e LORCANA_SKIP_IF_DB_EXISTS=true \
+  -- lorcana docker run --rm -i -v lorcana_mcp_data:/data \
+  ghcr.io/danielenricocahall/lorcana-mcp:1.0.0
+```
+
+### Via the Claude CLI — locally built
+```shell
+claude mcp add --scope user \
+  -e LORCANA_STORAGE_BACKEND=sqlite \
+  -e LORCANA_DB_PATH=/data/cards.db \
+  -e LORCANA_SKIP_IF_DB_EXISTS=true \
+  -- lorcana docker run --rm -i -v lorcana_mcp_data:/data lorcana-mcp:latest
 ```
 
 ## Example questions
