@@ -2,7 +2,7 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.danielenricocahall/lorcana-mcp",
   "title": "Lorcana MCP",
-  "description": "MCP server for Disney Lorcana card lookup",
+  "description": "MCP server for searching, exploring, and aggregating Disney Lorcana cards.",
   "version": "1.0.0",
   "packages": [
     {
