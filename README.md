@@ -1,6 +1,6 @@
 # lorcana-mcp
 
-MCP server for searching and aggregating Disney Lorcana cards.
+MCP server for searching and aggregating Disney Lorcana cards. 
 
 ## Startup behavior
 On startup, the server sends a POST request to `https://lorcania.com/api/cardsSearch` with:
@@ -22,7 +22,7 @@ Startup data loading is controlled by:
   - `true`: skip API fetch if sqlite DB already contains cards
   - `false`: fetch and repopulate sqlite
 
-If sqlite is used, cards are bulk inserted into `lorcana_cards` using `executemany`.
+Cards are bulk inserted into `lorcana_cards` using `executemany`.
 
 ## Run locally (stdio MCP)
 ```bash
@@ -64,6 +64,8 @@ Notes:
 - `LORCANA_SKIP_IF_DB_EXISTS` (`true` default)
 
 ## MCP client setup examples
+
+
 ### Local process (Claude Desktop-style)
 ```json
 {
@@ -116,6 +118,15 @@ Notes:
     }
   }
 }
+```
+
+### Via the Claude CLI (global)
+```shell
+  claude mcp add --scope user \
+    -e LORCANA_STORAGE_BACKEND=sqlite \
+    -e LORCANA_DB_PATH=/data/cards.db \
+    -e LORCANA_SKIP_IF_DB_EXISTS=true \
+    -- lorcana docker run --rm -i -v lorcana_mcp_data:/data lorcana-mcp:latest # or preferred way
 ```
 
 ## MCP tools
