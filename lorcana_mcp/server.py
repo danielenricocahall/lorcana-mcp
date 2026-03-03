@@ -58,6 +58,8 @@ def create_server() -> FastMCP:
         description=(
             "Search Lorcana cards with optional filters. Returns card objects (not counts). "
             "Color must be one of: ruby, sapphire, emerald, amber, amethyst, steel. "
+            "Use min_attack/max_attack and min_defence/max_defence for stat-based queries "
+            "(e.g. 'characters with 4+ attack'). Use min_cost/max_cost for cost ranges. "
             "Use count_cards instead if you only need a total count."
         )
     )
@@ -65,20 +67,32 @@ def create_server() -> FastMCP:
         name: str | None = None,
         color: str | None = None,
         cost: int | None = None,
+        min_cost: int | None = None,
+        max_cost: int | None = None,
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
         card_set_id: int | None = None,
+        min_attack: int | None = None,
+        max_attack: int | None = None,
+        min_defence: int | None = None,
+        max_defence: int | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
         return repository.search(
             name=name,
             color=color,
             cost=cost,
+            min_cost=min_cost,
+            max_cost=max_cost,
             trait=trait,
             rarity=rarity,
             inkwell=inkwell,
             card_set_id=card_set_id,
+            min_attack=min_attack,
+            max_attack=max_attack,
+            min_defence=min_defence,
+            max_defence=max_defence,
             limit=limit,
         )
 
@@ -90,6 +104,7 @@ def create_server() -> FastMCP:
         description=(
             "Count cards matching the given filters. Use this for questions like "
             "'how many ruby cards are there?' or 'how many legendary inkwell cards cost 3?'. "
+            "Supports stat ranges: min_attack/max_attack, min_defence/max_defence, min_cost/max_cost. "
             "Color must be one of: ruby, sapphire, emerald, amber, amethyst, steel."
         )
     )
@@ -97,19 +112,31 @@ def create_server() -> FastMCP:
         name: str | None = None,
         color: str | None = None,
         cost: int | None = None,
+        min_cost: int | None = None,
+        max_cost: int | None = None,
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
         card_set_id: int | None = None,
+        min_attack: int | None = None,
+        max_attack: int | None = None,
+        min_defence: int | None = None,
+        max_defence: int | None = None,
     ) -> int:
         return repository.count(
             name=name,
             color=color,
             cost=cost,
+            min_cost=min_cost,
+            max_cost=max_cost,
             trait=trait,
             rarity=rarity,
             inkwell=inkwell,
             card_set_id=card_set_id,
+            min_attack=min_attack,
+            max_attack=max_attack,
+            min_defence=min_defence,
+            max_defence=max_defence,
         )
 
     @mcp.tool(

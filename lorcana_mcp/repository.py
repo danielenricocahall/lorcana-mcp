@@ -77,10 +77,16 @@ class CardRepository(ABC):
         name: str | None = None,
         color: str | None = None,
         cost: int | None = None,
+        min_cost: int | None = None,
+        max_cost: int | None = None,
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
         card_set_id: int | None = None,
+        min_attack: int | None = None,
+        max_attack: int | None = None,
+        min_defence: int | None = None,
+        max_defence: int | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
         raise NotImplementedError
@@ -108,10 +114,16 @@ class CardRepository(ABC):
         name: str | None = None,
         color: str | None = None,
         cost: int | None = None,
+        min_cost: int | None = None,
+        max_cost: int | None = None,
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
         card_set_id: int | None = None,
+        min_attack: int | None = None,
+        max_attack: int | None = None,
+        min_defence: int | None = None,
+        max_defence: int | None = None,
     ) -> int:
         raise NotImplementedError
 
@@ -201,16 +213,26 @@ class SQLiteCardRepository(CardRepository):
         name: str | None,
         color: str | None,
         cost: int | None,
+        min_cost: int | None,
+        max_cost: int | None,
         trait: str | None,
         rarity: str | None,
         inkwell: bool | None,
         card_set_id: int | None,
+        min_attack: int | None,
+        max_attack: int | None,
+        min_defence: int | None,
+        max_defence: int | None,
     ) -> list:
         clauses = []
         if name:
             clauses.append(lower(self.card_table.name).like(f"%{name}%"))
         if cost is not None:
             clauses.append(self.card_table.cost == int(cost))
+        if min_cost is not None:
+            clauses.append(self.card_table.cost >= int(min_cost))
+        if max_cost is not None:
+            clauses.append(self.card_table.cost <= int(max_cost))
         if trait:
             clauses.append(lower(self.card_table.traits).like(f"%{trait}%"))
         if rarity:
@@ -221,6 +243,14 @@ class SQLiteCardRepository(CardRepository):
             clauses.append(self.card_table.color == int(self.get_id_based_on_color(color.lower())))
         if card_set_id is not None:
             clauses.append(self.card_table.card_set_id == int(card_set_id))
+        if min_attack is not None:
+            clauses.append(self.card_table.attack >= int(min_attack))
+        if max_attack is not None:
+            clauses.append(self.card_table.attack <= int(max_attack))
+        if min_defence is not None:
+            clauses.append(self.card_table.defence >= int(min_defence))
+        if max_defence is not None:
+            clauses.append(self.card_table.defence <= int(max_defence))
         return clauses
 
     def search(
@@ -229,14 +259,23 @@ class SQLiteCardRepository(CardRepository):
         name: str | None = None,
         color: str | None = None,
         cost: int | None = None,
+        min_cost: int | None = None,
+        max_cost: int | None = None,
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
         card_set_id: int | None = None,
+        min_attack: int | None = None,
+        max_attack: int | None = None,
+        min_defence: int | None = None,
+        max_defence: int | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
         limited = max(1, min(limit, 200))
-        clauses = self._build_filter_clauses(name, color, cost, trait, rarity, inkwell, card_set_id)
+        clauses = self._build_filter_clauses(
+            name, color, cost, min_cost, max_cost, trait, rarity, inkwell, card_set_id,
+            min_attack, max_attack, min_defence, max_defence,
+        )
         query = self.card_table.select("*")
         if clauses:
             query = query.where(*clauses)
@@ -254,12 +293,21 @@ class SQLiteCardRepository(CardRepository):
         name: str | None = None,
         color: str | None = None,
         cost: int | None = None,
+        min_cost: int | None = None,
+        max_cost: int | None = None,
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
         card_set_id: int | None = None,
+        min_attack: int | None = None,
+        max_attack: int | None = None,
+        min_defence: int | None = None,
+        max_defence: int | None = None,
     ) -> int:
-        clauses = self._build_filter_clauses(name, color, cost, trait, rarity, inkwell, card_set_id)
+        clauses = self._build_filter_clauses(
+            name, color, cost, min_cost, max_cost, trait, rarity, inkwell, card_set_id,
+            min_attack, max_attack, min_defence, max_defence,
+        )
         query = self.card_table.select(count(self.card_table.id).as_("count"))
         if clauses:
             query = query.where(*clauses)
