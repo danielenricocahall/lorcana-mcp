@@ -80,6 +80,7 @@ class CardRepository(ABC):
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
+        card_set_id: int | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
         raise NotImplementedError
@@ -110,6 +111,7 @@ class CardRepository(ABC):
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
+        card_set_id: int | None = None,
     ) -> int:
         raise NotImplementedError
 
@@ -202,6 +204,7 @@ class SQLiteCardRepository(CardRepository):
         trait: str | None,
         rarity: str | None,
         inkwell: bool | None,
+        card_set_id: int | None,
     ) -> list:
         clauses = []
         if name:
@@ -216,6 +219,8 @@ class SQLiteCardRepository(CardRepository):
             clauses.append(self.card_table.inkwell == (1 if inkwell else 0))
         if color:
             clauses.append(self.card_table.color == int(self.get_id_based_on_color(color.lower())))
+        if card_set_id is not None:
+            clauses.append(self.card_table.card_set_id == int(card_set_id))
         return clauses
 
     def search(
@@ -227,10 +232,11 @@ class SQLiteCardRepository(CardRepository):
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
+        card_set_id: int | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
         limited = max(1, min(limit, 200))
-        clauses = self._build_filter_clauses(name, color, cost, trait, rarity, inkwell)
+        clauses = self._build_filter_clauses(name, color, cost, trait, rarity, inkwell, card_set_id)
         query = self.card_table.select("*")
         if clauses:
             query = query.where(*clauses)
@@ -251,8 +257,9 @@ class SQLiteCardRepository(CardRepository):
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
+        card_set_id: int | None = None,
     ) -> int:
-        clauses = self._build_filter_clauses(name, color, cost, trait, rarity, inkwell)
+        clauses = self._build_filter_clauses(name, color, cost, trait, rarity, inkwell, card_set_id)
         query = self.card_table.select(count(self.card_table.id).as_("count"))
         if clauses:
             query = query.where(*clauses)

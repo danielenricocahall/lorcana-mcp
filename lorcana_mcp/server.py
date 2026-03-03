@@ -68,6 +68,7 @@ def create_server() -> FastMCP:
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
+        card_set_id: int | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
         return repository.search(
@@ -77,6 +78,7 @@ def create_server() -> FastMCP:
             trait=trait,
             rarity=rarity,
             inkwell=inkwell,
+            card_set_id=card_set_id,
             limit=limit,
         )
 
@@ -98,6 +100,7 @@ def create_server() -> FastMCP:
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
+        card_set_id: int | None = None,
     ) -> int:
         return repository.count(
             name=name,
@@ -106,6 +109,7 @@ def create_server() -> FastMCP:
             trait=trait,
             rarity=rarity,
             inkwell=inkwell,
+            card_set_id=card_set_id,
         )
 
     @mcp.tool(
