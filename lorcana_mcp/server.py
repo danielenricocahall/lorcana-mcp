@@ -60,6 +60,8 @@ def create_server() -> FastMCP:
             "Color must be one of: ruby, sapphire, emerald, amber, amethyst, steel. "
             "Use min_attack/max_attack and min_defence/max_defence for stat-based queries "
             "(e.g. 'characters with 4+ attack'). Use min_cost/max_cost for cost ranges. "
+            "Use body_text to search card ability text (e.g. 'Evasive', 'Singer', 'Reckless'). "
+            "Use lore/min_lore/max_lore to filter by lore value (stars). "
             "Use count_cards instead if you only need a total count."
         )
     )
@@ -77,6 +79,10 @@ def create_server() -> FastMCP:
         max_attack: int | None = None,
         min_defence: int | None = None,
         max_defence: int | None = None,
+        body_text: str | None = None,
+        lore: int | None = None,
+        min_lore: int | None = None,
+        max_lore: int | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
         return repository.search(
@@ -93,6 +99,10 @@ def create_server() -> FastMCP:
             max_attack=max_attack,
             min_defence=min_defence,
             max_defence=max_defence,
+            body_text=body_text,
+            lore=lore,
+            min_lore=min_lore,
+            max_lore=max_lore,
             limit=limit,
         )
 
@@ -105,6 +115,8 @@ def create_server() -> FastMCP:
             "Count cards matching the given filters. Use this for questions like "
             "'how many ruby cards are there?' or 'how many legendary inkwell cards cost 3?'. "
             "Supports stat ranges: min_attack/max_attack, min_defence/max_defence, min_cost/max_cost. "
+            "Use body_text to match card ability text (e.g. 'Singer 5', 'Evasive', 'Reckless'). "
+            "Use lore/min_lore/max_lore to filter by lore value (stars). "
             "Color must be one of: ruby, sapphire, emerald, amber, amethyst, steel."
         )
     )
@@ -122,6 +134,10 @@ def create_server() -> FastMCP:
         max_attack: int | None = None,
         min_defence: int | None = None,
         max_defence: int | None = None,
+        body_text: str | None = None,
+        lore: int | None = None,
+        min_lore: int | None = None,
+        max_lore: int | None = None,
     ) -> int:
         return repository.count(
             name=name,
@@ -137,6 +153,10 @@ def create_server() -> FastMCP:
             max_attack=max_attack,
             min_defence=min_defence,
             max_defence=max_defence,
+            body_text=body_text,
+            lore=lore,
+            min_lore=min_lore,
+            max_lore=max_lore,
         )
 
     @mcp.tool(

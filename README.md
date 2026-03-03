@@ -129,13 +129,50 @@ Notes:
     -- lorcana docker run --rm -i -v lorcana_mcp_data:/data lorcana-mcp:latest # or preferred way
 ```
 
+## Example questions
+
+Once connected to an MCP client, you can ask natural language questions like:
+
+**Card lookup**
+- "Show me all cards named Moana"
+- "What does the card Maui - Hero to All do?"
+- "Find all legendary amber cards"
+
+**Deck building**
+- "What are the cheapest ruby characters with at least 3 attack?"
+- "Show me inkable sapphire cards that cost 4 or less"
+- "Find steel characters with 5 or more defence"
+- "What 3-lore characters exist in emerald?"
+
+**Keyword & ability search**
+- "How many Singer cards cost exactly 5?"
+- "How many Evasive characters are there in the first set?"
+- "How many ruby cards have Reckless?"
+- "Find all cards with Ward in their text"
+- "Show me Shift cards in amethyst"
+
+**Stats & aggregations**
+- "How many cards are in each set?"
+- "What's the color distribution across all cards?"
+- "What are the most common traits?"
+- "Show me the ink curve — how many cards exist at each cost?"
+- "How many legendary cards are inkable?"
+
+**Cross-filter queries**
+- "How many amber characters have 3 or more lore?"
+- "Find cheap (cost 2-3) characters with high attack (4+) in steel"
+- "How many cards in set 1 have Evasive and cost less than 4?"
+
+> **Note:** The `action` (ability text) field is stored as raw HTML from the API. Keyword searches like `Evasive`, `Singer 5`, or `Reckless` work reliably since the keyword word appears verbatim, but complex phrase searches may be slightly noisy. Sanitizing the action text is a planned improvement.
+
 ## MCP tools
-- `search_cards`
-- `get_card_by_id`
-- `aggregate_cards`
-- `ink_curve_stats`
-- `top_traits`
-- `color_distribution`
-- `rarity_breakdown`
-- `set_distribution`
-- `server_status`
+- `search_cards` — filter and retrieve card objects
+- `count_cards` — count cards matching a filter without returning full objects
+- `get_card_by_id` — fetch a single card by its ID
+- `aggregate_cards` — count cards grouped by any field
+- `ink_curve_stats` — card counts by ink cost
+- `top_traits` — most common traits across all cards
+- `color_distribution` — card count per color
+- `rarity_breakdown` — card count per rarity
+- `set_distribution` — card count per set
+- `server_status` — startup metadata (backend, card count, config)

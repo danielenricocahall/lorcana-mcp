@@ -87,6 +87,10 @@ class CardRepository(ABC):
         max_attack: int | None = None,
         min_defence: int | None = None,
         max_defence: int | None = None,
+        body_text: str | None = None,
+        lore: int | None = None,
+        min_lore: int | None = None,
+        max_lore: int | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
         raise NotImplementedError
@@ -124,6 +128,10 @@ class CardRepository(ABC):
         max_attack: int | None = None,
         min_defence: int | None = None,
         max_defence: int | None = None,
+        body_text: str | None = None,
+        lore: int | None = None,
+        min_lore: int | None = None,
+        max_lore: int | None = None,
     ) -> int:
         raise NotImplementedError
 
@@ -223,6 +231,10 @@ class SQLiteCardRepository(CardRepository):
         max_attack: int | None,
         min_defence: int | None,
         max_defence: int | None,
+        body_text: str | None,
+        lore: int | None,
+        min_lore: int | None,
+        max_lore: int | None,
     ) -> list:
         clauses = []
         if name:
@@ -251,6 +263,14 @@ class SQLiteCardRepository(CardRepository):
             clauses.append(self.card_table.defence >= int(min_defence))
         if max_defence is not None:
             clauses.append(self.card_table.defence <= int(max_defence))
+        if body_text:
+            clauses.append(lower(self.card_table.action).like(f"%{body_text.lower()}%"))
+        if lore is not None:
+            clauses.append(self.card_table.stars == int(lore))
+        if min_lore is not None:
+            clauses.append(self.card_table.stars >= int(min_lore))
+        if max_lore is not None:
+            clauses.append(self.card_table.stars <= int(max_lore))
         return clauses
 
     def search(
@@ -269,12 +289,16 @@ class SQLiteCardRepository(CardRepository):
         max_attack: int | None = None,
         min_defence: int | None = None,
         max_defence: int | None = None,
+        body_text: str | None = None,
+        lore: int | None = None,
+        min_lore: int | None = None,
+        max_lore: int | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
         limited = max(1, min(limit, 200))
         clauses = self._build_filter_clauses(
             name, color, cost, min_cost, max_cost, trait, rarity, inkwell, card_set_id,
-            min_attack, max_attack, min_defence, max_defence,
+            min_attack, max_attack, min_defence, max_defence, body_text, lore, min_lore, max_lore,
         )
         query = self.card_table.select("*")
         if clauses:
@@ -303,10 +327,14 @@ class SQLiteCardRepository(CardRepository):
         max_attack: int | None = None,
         min_defence: int | None = None,
         max_defence: int | None = None,
+        body_text: str | None = None,
+        lore: int | None = None,
+        min_lore: int | None = None,
+        max_lore: int | None = None,
     ) -> int:
         clauses = self._build_filter_clauses(
             name, color, cost, min_cost, max_cost, trait, rarity, inkwell, card_set_id,
-            min_attack, max_attack, min_defence, max_defence,
+            min_attack, max_attack, min_defence, max_defence, body_text, lore, min_lore, max_lore,
         )
         query = self.card_table.select(count(self.card_table.id).as_("count"))
         if clauses:
