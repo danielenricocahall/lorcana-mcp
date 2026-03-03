@@ -56,6 +56,26 @@ def _parse_listish(value: Any) -> list[str]:
     return [part.strip() for part in re.split(r"[,|]", text) if part.strip()]
 
 
+def _get_color_based_on_id(color_id: str | int) -> str:
+    return _id_to_color_mapping[int(color_id)]
+
+def _get_id_based_on_color(color: str) -> str:
+    return str(_color_to_id_mapping[color])
+
+def _color_to_id_mapping():
+    return {
+        "ruby": 1,
+        "sapphire": 2,
+        "emerald": 3,
+        "amber": 4,
+        "amethyst": 5,
+        "steel": 6,
+    }
+
+def _id_to_color_mapping(self):
+    return {v: k for k, v in self.color_to_id_mapping.items()}
+
+
 class CardRepository(ABC):
     @abstractmethod
     def load_cards(self, cards: list[dict[str, Any]]) -> int:
@@ -194,10 +214,11 @@ class SQLiteCardRepository(CardRepository):
 
         rows = self._run_query(query.build())
         if color:
+            color = _get_id_based_on_color(color.lower())
             rows = [
                 row
                 for row in rows
-                if _contains_case_insensitive(row.get("colors") or row.get("color"), color)
+                if _contains_case_insensitive(row.get("color"), color)
             ]
         return rows[:limited]
 

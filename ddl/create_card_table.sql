@@ -1,3 +1,4 @@
+DROP TABLE IF EXISTS lorcana_cards;
 CREATE TABLE lorcana_cards (
     id              INTEGER PRIMARY KEY,
     name            VARCHAR(100) NOT NULL,
