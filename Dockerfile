@@ -1,5 +1,7 @@
 FROM python:3.13-slim
 
+LABEL io.modelcontextprotocol.server.name="io.github.danielenricocahall/lorcana-mcp"
+
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_LINK_MODE=copy

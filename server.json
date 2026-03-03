@@ -1,0 +1,14 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.danielenricocahall/lorcana-mcp",
+  "title": "Lorcana MCP",
+  "description": "MCP server for Disney Lorcana card lookup",
+  "version": "1.0.0",
+  "packages": [
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/danielenricocahall/lorcana-mcp:1.0.0",
+      "transport": { "type": "stdio" }
+    }
+  ]
+}

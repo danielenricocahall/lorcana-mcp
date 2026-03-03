@@ -1,7 +1,7 @@
 [project]
 name = "lorcana-mcp"
-version = "0.1.0"
-description = "Add your description here"
+version = "1.0.0"
+description = "MCP server for searching and aggregating Disney Lorcana cards."
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
