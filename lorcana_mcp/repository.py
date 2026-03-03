@@ -57,10 +57,10 @@ def _parse_listish(value: Any) -> list[str]:
 
 
 def _get_color_based_on_id(color_id: str | int) -> str:
-    return _id_to_color_mapping[int(color_id)]
+    return _id_to_color_mapping()[int(color_id)]
 
 def _get_id_based_on_color(color: str) -> str:
-    return str(_color_to_id_mapping[color])
+    return str(_color_to_id_mapping()[color])
 
 def _color_to_id_mapping():
     return {
@@ -72,8 +72,8 @@ def _color_to_id_mapping():
         "steel": 6,
     }
 
-def _id_to_color_mapping(self):
-    return {v: k for k, v in self.color_to_id_mapping.items()}
+def _id_to_color_mapping():
+    return {v: k for k, v in _color_to_id_mapping().items()}
 
 
 class CardRepository(ABC):
