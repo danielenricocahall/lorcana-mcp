@@ -1,0 +1,18 @@
+services:
+  lorcana-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lorcana-mcp:latest
+    stdin_open: true
+    tty: false
+    environment:
+      LORCANA_STORAGE_BACKEND: sqlite
+      LORCANA_DB_PATH: /data/cards.db
+      LORCANA_SKIP_IF_DB_EXISTS: "true"
+      LORCANA_REFRESH_ON_STARTUP: "false"
+    volumes:
+      - lorcana_mcp_data:/data
+
+volumes:
+  lorcana_mcp_data:

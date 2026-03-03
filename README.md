@@ -24,10 +24,36 @@ Startup data loading is controlled by:
 
 If sqlite is used, cards are bulk inserted into `lorcana_cards` using `executemany`.
 
-## Run
+## Run locally (stdio MCP)
 ```bash
 uv run python main.py
 ```
+
+## Docker
+### Build image
+```bash
+docker build -t lorcana-mcp:latest .
+```
+
+### Run as stdio MCP server
+```bash
+docker run --rm -i \
+  -e LORCANA_STORAGE_BACKEND=sqlite \
+  -e LORCANA_DB_PATH=/data/cards.db \
+  -v lorcana_mcp_data:/data \
+  lorcana-mcp:latest
+```
+
+## Docker Compose
+### Start with compose
+```bash
+docker compose build
+docker compose run --rm -T lorcana-mcp
+```
+
+Notes:
+- No port is exposed; MCP communication is over stdio.
+- Use a volume (as above) to persist sqlite cache across restarts.
 
 ## Config
 - `LORCANA_API` (default: `https://lorcania.com/api/cardsSearch`)
@@ -36,6 +62,61 @@ uv run python main.py
 - `LORCANA_HTTP_TIMEOUT_SECONDS` (default: `30`)
 - `LORCANA_REFRESH_ON_STARTUP` (`false` default)
 - `LORCANA_SKIP_IF_DB_EXISTS` (`true` default)
+
+## MCP client setup examples
+### Local process (Claude Desktop-style)
+```json
+{
+  "mcpServers": {
+    "lorcana": {
+      "command": "uv",
+      "args": ["run", "python", "/absolute/path/to/lorcana-mcp/main.py"],
+      "env": {
+        "LORCANA_STORAGE_BACKEND": "sqlite",
+        "LORCANA_DB_PATH": "/absolute/path/to/lorcana-mcp/cards.db",
+        "LORCANA_SKIP_IF_DB_EXISTS": "true"
+      }
+    }
+  }
+}
+```
+
+### Docker process (Claude Desktop-style)
+```json
+{
+  "mcpServers": {
+    "lorcana": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e",
+        "LORCANA_STORAGE_BACKEND=sqlite",
+        "-e",
+        "LORCANA_DB_PATH=/data/cards.db",
+        "-e",
+        "LORCANA_SKIP_IF_DB_EXISTS=true",
+        "-v",
+        "lorcana_mcp_data:/data",
+        "lorcana-mcp:latest"
+      ]
+    }
+  }
+}
+```
+
+### Docker Compose process (Claude Desktop-style)
+```json
+{
+  "mcpServers": {
+    "lorcana": {
+      "command": "docker",
+      "args": ["compose", "run", "--rm", "-T", "lorcana-mcp"]
+    }
+  }
+}
+```
 
 ## MCP tools
 - `search_cards`
