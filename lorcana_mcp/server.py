@@ -45,12 +45,22 @@ def create_server() -> FastMCP:
         instructions=(
             "Use this server to search and aggregate Disney Lorcana cards. "
             f"Loaded {loaded_count} cards on startup using backend={config.storage_backend} "
-            f"(mode={startup_mode})."
+            f"(mode={startup_mode}). "
+            "Valid color names: ruby, sapphire, emerald, amber, amethyst, steel. "
+            "To count cards matching a filter (e.g. 'how many ruby cards?'), use count_cards. "
+            "To get a breakdown of all cards by color, use color_distribution. "
+            "To retrieve card details or browse cards, use search_cards."
         ),
         version="0.1.0",
     )
 
-    @mcp.tool(description="Search Lorcana cards with optional filters.")
+    @mcp.tool(
+        description=(
+            "Search Lorcana cards with optional filters. Returns card objects (not counts). "
+            "Color must be one of: ruby, sapphire, emerald, amber, amethyst, steel. "
+            "Use count_cards instead if you only need a total count."
+        )
+    )
     def search_cards(
         name: str | None = None,
         color: str | None = None,
@@ -76,6 +86,30 @@ def create_server() -> FastMCP:
 
     @mcp.tool(
         description=(
+            "Count cards matching the given filters. Use this for questions like "
+            "'how many ruby cards are there?' or 'how many legendary inkwell cards cost 3?'. "
+            "Color must be one of: ruby, sapphire, emerald, amber, amethyst, steel."
+        )
+    )
+    def count_cards(
+        name: str | None = None,
+        color: str | None = None,
+        cost: int | None = None,
+        trait: str | None = None,
+        rarity: str | None = None,
+        inkwell: bool | None = None,
+    ) -> int:
+        return repository.count(
+            name=name,
+            color=color,
+            cost=cost,
+            trait=trait,
+            rarity=rarity,
+            inkwell=inkwell,
+        )
+
+    @mcp.tool(
+        description=(
             "Return counts grouped by a field (e.g., cost, rarity, colors, card_set_id)."
         )
     )
@@ -90,7 +124,7 @@ def create_server() -> FastMCP:
     def top_traits(limit: int = 10) -> dict[str, int]:
         return repository.top_traits(limit=limit)
 
-    @mcp.tool(description="Return card distribution by color.")
+    @mcp.tool(description="Return card count per color (ruby, sapphire, emerald, amber, amethyst, steel).")
     def color_distribution() -> dict[str, int]:
         return repository.color_distribution()
 

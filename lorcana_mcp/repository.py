@@ -10,7 +10,7 @@ from typing import Any
 
 from pysqlscribe.aggregate_functions import count
 from pysqlscribe.scalar_functions import lower
-from pysqlscribe.table import Table
+from pysqlscribe.table import SqliteTable
 
 from pysqlscribe.utils.ddl_loader import load_tables_from_ddls
 
@@ -56,25 +56,6 @@ def _parse_listish(value: Any) -> list[str]:
     return [part.strip() for part in re.split(r"[,|]", text) if part.strip()]
 
 
-def _get_color_based_on_id(color_id: str | int) -> str:
-    return _id_to_color_mapping()[int(color_id)]
-
-def _get_id_based_on_color(color: str) -> str:
-    return str(_color_to_id_mapping()[color])
-
-def _color_to_id_mapping():
-    return {
-        "ruby": 1,
-        "sapphire": 2,
-        "emerald": 3,
-        "amber": 4,
-        "amethyst": 5,
-        "steel": 6,
-    }
-
-def _id_to_color_mapping():
-    return {v: k for k, v in _color_to_id_mapping().items()}
-
 
 class CardRepository(ABC):
     @abstractmethod
@@ -119,6 +100,40 @@ class CardRepository(ABC):
     def color_distribution(self) -> dict[str, int]:
         raise NotImplementedError
 
+    @abstractmethod
+    def count(
+        self,
+        *,
+        name: str | None = None,
+        color: str | None = None,
+        cost: int | None = None,
+        trait: str | None = None,
+        rarity: str | None = None,
+        inkwell: bool | None = None,
+    ) -> int:
+        raise NotImplementedError
+
+    def get_color_based_on_id(self, color_id: str | int) -> str:
+        return self.id_to_color_mapping[color_id]
+
+    def get_id_based_on_color(self, color: str) -> str:
+        return str(self.color_to_id_mapping[color])
+
+    @property
+    def color_to_id_mapping(self):
+        return {
+            "ruby": 1,
+            "sapphire": 2,
+            "emerald": 3,
+            "amber": 4,
+            "amethyst": 5,
+            "steel": 6,
+        }
+
+    @property
+    def id_to_color_mapping(self):
+        return {v: k for k, v in self.color_to_id_mapping.items()}
+
 
 
 class SQLiteCardRepository(CardRepository):
@@ -129,7 +144,7 @@ class SQLiteCardRepository(CardRepository):
         self.card_table = load_tables_from_ddls(str(DDL_PATH), "sqlite")["lorcana_cards"]
 
     @property
-    def card_table(self) -> Table:
+    def card_table(self) -> SqliteTable:
         return self._card_table
 
     @card_table.setter
@@ -163,24 +178,45 @@ class SQLiteCardRepository(CardRepository):
         with self._conn() as conn:
             conn.execute("DELETE FROM lorcana_cards")
             columns = sorted(set().union(*(card.keys() for card in normalized)))
-            placeholders = ", ".join("?" for _ in columns)
-            sql = (
-                f"INSERT INTO lorcana_cards ({', '.join(columns)}) "
-                f"VALUES ({placeholders})"
-            )
+            placeholders = tuple(["?" for _ in columns])
+            sql = self.card_table.insert(*columns, values=placeholders).build()
             values = [tuple(card.get(column) for column in columns) for card in normalized]
             conn.executemany(sql, values)
         return len(normalized)
 
     def has_cards(self) -> bool:
-        query = self.card_table.select(count(self._card_table.id).as_("count"))
+        query = self.card_table.select(count(self.card_table.id).as_("count"))
         rows = self._run_query(query.build())
         return int(rows[0].get("count", 0)) > 0 if rows else False
 
     def total_cards(self) -> int:
-        query = self.card_table.select(count(self._card_table.id).as_("count"))
+        query = self.card_table.select(count(self.card_table.id).as_("count"))
         rows = self._run_query(query.build())
         return int(rows[0].get("count", 0)) if rows else 0
+
+    def _build_filter_clauses(
+        self,
+        name: str | None,
+        color: str | None,
+        cost: int | None,
+        trait: str | None,
+        rarity: str | None,
+        inkwell: bool | None,
+    ) -> list:
+        clauses = []
+        if name:
+            clauses.append(lower(self.card_table.name).like(f"%{name}%"))
+        if cost is not None:
+            clauses.append(self.card_table.cost == int(cost))
+        if trait:
+            clauses.append(lower(self.card_table.traits).like(f"%{trait}%"))
+        if rarity:
+            clauses.append(lower(self.card_table.rarity) == rarity)
+        if inkwell is not None:
+            clauses.append(self.card_table.inkwell == (1 if inkwell else 0))
+        if color:
+            clauses.append(self.card_table.color == int(self.get_id_based_on_color(color.lower())))
+        return clauses
 
     def search(
         self,
@@ -194,50 +230,46 @@ class SQLiteCardRepository(CardRepository):
         limit: int = 20,
     ) -> list[dict[str, Any]]:
         limited = max(1, min(limit, 200))
-        clauses = []
-
-        if name:
-            clauses.append(lower(self._card_table.name).like(f"%{name}%"))
-        if cost is not None:
-            clauses.append(self._card_table.cost == int(cost))
-        if trait:
-            clauses.append(lower(self._card_table.traits).like(f"%{trait}%"))
-        if rarity:
-            clauses.append(lower(self._card_table.rarity) == rarity)
-        if inkwell is not None:
-            clauses.append(self._card_table.inkwell == (1 if inkwell else 0))
-
-        query = self._card_table.select("*")
+        clauses = self._build_filter_clauses(name, color, cost, trait, rarity, inkwell)
+        query = self.card_table.select("*")
         if clauses:
             query = query.where(*clauses)
-        query = query.order_by(self._card_table.id).limit(limited)
-
-        rows = self._run_query(query.build())
-        if color:
-            color = _get_id_based_on_color(color.lower())
-            rows = [
-                row
-                for row in rows
-                if _contains_case_insensitive(row.get("color"), color)
-            ]
-        return rows[:limited]
+        query = query.order_by(self.card_table.id).limit(limited)
+        return self._run_query(query.build())
 
     def get_by_id(self, card_id: int) -> dict[str, Any] | None:
-        query = self._card_table.select("*").where(self._card_table.id == card_id).limit(1)
+        query = self.card_table.select("*").where(self.card_table.id == card_id).limit(1)
         rows = self._run_query(query.build())
         return rows[0] if rows else None
 
+    def count(
+        self,
+        *,
+        name: str | None = None,
+        color: str | None = None,
+        cost: int | None = None,
+        trait: str | None = None,
+        rarity: str | None = None,
+        inkwell: bool | None = None,
+    ) -> int:
+        clauses = self._build_filter_clauses(name, color, cost, trait, rarity, inkwell)
+        query = self.card_table.select(count(self.card_table.id).as_("count"))
+        if clauses:
+            query = query.where(*clauses)
+        rows = self._run_query(query.build())
+        return int(rows[0].get("count", 0)) if rows else 0
+
     def count_by(self, field: str) -> dict[str, int]:
 
-        column = getattr(self._card_table, field)
-        query = self._card_table.select(column, count(column).as_("count")).group_by(column)
+        column = getattr(self.card_table, field)
+        query = self.card_table.select(column, count(column).as_("count")).group_by(column)
         rows = self._run_query(query.build())
         rows.sort(key=lambda row: int(row.get("count", 0)), reverse=True)
         return {str(row.get(field) or ""): int(row.get("count", 0)) for row in rows}
 
     def top_traits(self, limit: int = 10) -> dict[str, int]:
         limited = max(1, min(limit, 100))
-        query = self._card_table.select(self._card_table.traits)
+        query = self.card_table.select(self.card_table.traits)
         rows = self._run_query(query.build())
         counter = Counter()
         for row in rows:
@@ -246,14 +278,20 @@ class SQLiteCardRepository(CardRepository):
         return dict(counter.most_common(limited))
 
     def color_distribution(self) -> dict[str, int]:
-        query = self._card_table.select(self._card_table.colors, self._card_table.color)
+        query = self.card_table.select(self.card_table.colors, self.card_table.color)
         rows = self._run_query(query.build())
         counter = Counter()
         for row in rows:
             colors = _parse_listish(row.get("colors"))
             if colors:
                 for color in colors:
+                    try:
+                        color = self.id_to_color_mapping.get(int(color), color)
+                    except (ValueError, TypeError):
+                        pass
                     counter[color] += 1
             elif row.get("color") is not None:
-                counter[str(row.get("color"))] += 1
+                color_id = row.get("color")
+                color = self.id_to_color_mapping.get(int(color_id), str(color_id))
+                counter[color] += 1
         return dict(counter.most_common())
