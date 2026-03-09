@@ -6,6 +6,7 @@ from fastmcp import FastMCP
 
 from lorcana_mcp.client import LorcanaApiClient
 from lorcana_mcp.config import LorcanaConfig
+from lorcana_mcp.embeddings import ChromaCardIndex
 from lorcana_mcp.repository import (
     SQLiteCardRepository,
 )
@@ -25,19 +26,23 @@ def create_server() -> FastMCP:
     loaded_from_cache = False
     fetch_on_startup = True
 
-    repository = SQLiteCardRepository(config.db_path, initial_load=fetch_on_startup)
+    repository = SQLiteCardRepository(config.db_path)
+    chroma_index = ChromaCardIndex(config.chroma_path)
     if config.refresh_on_startup:
         fetch_on_startup = True
     elif config.skip_if_db_exists and repository.has_cards():
         fetch_on_startup = False
         loaded_from_cache = True
 
-
     if fetch_on_startup:
         cards = api_client.fetch_cards()
         loaded_count = repository.load_cards(cards)
+        chroma_index.hydrate(cards)
     else:
         loaded_count = repository.total_cards()
+        if not chroma_index.is_hydrated():
+            all_cards = repository.search(limit=9999)
+            chroma_index.hydrate(all_cards)
 
     startup_mode = "fetched" if fetch_on_startup else "cached"
     mcp = FastMCP(
@@ -186,6 +191,25 @@ def create_server() -> FastMCP:
     @mcp.tool(description="Return card distribution by set id.")
     def set_distribution() -> dict[str, int]:
         return repository.count_by("card_set_id")
+
+    @mcp.tool(
+        description=(
+            "Search Lorcana cards using natural language / semantic similarity. "
+            "Use this for concept-based queries that structured filters cannot express, e.g.: "
+            "'cards that return characters to hand', 'cheap high-lore questers', "
+            "'cards that draw and then discard', 'tanky bodyguards'. "
+            "Optionally pre-filter by color (ruby/sapphire/emerald/amber/amethyst/steel) or rarity "
+            "before ranking by semantic relevance. Returns cards ordered by relevance."
+        )
+    )
+    def semantic_search_cards(
+        query: str,
+        n_results: int = 10,
+        color: str | None = None,
+        rarity: str | None = None,
+    ) -> list[dict[str, Any]]:
+        card_ids = chroma_index.search(query, n_results=n_results, color=color, rarity=rarity)
+        return [card for card_id in card_ids if (card := repository.get_by_id(card_id)) is not None]
 
     @mcp.tool(description="Show startup metadata for this server instance.")
     def server_status() -> dict[str, Any]:

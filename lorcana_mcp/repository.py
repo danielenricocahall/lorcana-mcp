@@ -159,7 +159,7 @@ class CardRepository(ABC):
 
 
 class SQLiteCardRepository(CardRepository):
-    def __init__(self, db_path: Path, initial_load: bool = True) -> None:
+    def __init__(self, db_path: Path) -> None:
         self._db_path = db_path
         self._card_table = None
         self._create_schema()
