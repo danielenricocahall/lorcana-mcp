@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import tomllib
+from pathlib import Path
 from typing import Any
 
 from fastmcp import FastMCP
@@ -9,6 +11,11 @@ from lorcana_mcp.config import LorcanaConfig
 from lorcana_mcp.repository import (
     SQLiteCardRepository,
 )
+
+
+def _get_version() -> str:
+    pyproject = Path(__file__).parent.parent / "pyproject.toml"
+    return tomllib.loads(pyproject.read_text())["project"]["version"]
 
 
 def _build_repository(config: LorcanaConfig):
@@ -51,7 +58,7 @@ def create_server() -> FastMCP:
             "To get a breakdown of all cards by color, use color_distribution. "
             "To retrieve card details or browse cards, use search_cards."
         ),
-        version="0.1.0",
+        version=_get_version(),
     )
 
     @mcp.tool(
