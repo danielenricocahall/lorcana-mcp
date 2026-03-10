@@ -1,6 +1,6 @@
-# lorcana-mcp
+# Lorcana MCP Server
 
-MCP server for searching and aggregating Disney Lorcana cards. 
+An MCP server for searching and aggregating Disney Lorcana cards. 
 
 ## Startup behavior
 On startup, the server sends a POST request to `https://lorcania.com/api/cardsSearch` with:
