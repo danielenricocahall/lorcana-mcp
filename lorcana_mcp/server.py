@@ -206,4 +206,66 @@ def create_server() -> FastMCP:
             "loaded_from_cache": loaded_from_cache,
         }
 
+    @mcp.prompt(
+        description=(
+            "Guide the user through building a legal 60-card Lorcana deck. "
+            "Accepts preferred color(s) and playstyle, then uses the available "
+            "search and aggregation tools to suggest a full deck list with synergy notes."
+        )
+    )
+    def build_deck(
+        colors: str,
+        playstyle: str = "balanced",
+    ) -> str:
+        return f"""You are helping build a legal Disney Lorcana deck. Use the lorcana-mcp tools to search and select cards.
+
+## Parameters
+- Colors: {colors}
+- Playstyle: {playstyle}
+
+## Deck Rules
+- Exactly 60 cards total
+- Maximum 2 ink colors
+- Maximum 4 copies of any single card (by name)
+- Aim for ~20 inkable cards to ensure consistent ink development each turn
+
+## Steps
+
+1. **Explore the card pool** — use `search_cards` filtered to the requested color(s). Browse by cost, traits, and body text to understand what's available.
+2. **Build the curve** — target this distribution across 60 cards:
+   - Cost 1–2: 10–14 cards (early plays and ink fodder)
+   - Cost 3–4: 16–20 cards (midgame)
+   - Cost 5–6: 10–14 cards (late threats)
+   - Cost 7+: 6–10 cards (finishers, use sparingly)
+3. **Find synergies** — use `top_traits` to identify strong trait clusters. Look for Singer/Song pairs (body_text="Singer"), Shift chains, or keyword combos (Evasive, Bodyguard, Challenger).
+4. **Adjust for playstyle**:
+   - aggressive: favor low-cost cards with Rush or high attack, minimize cost 6+
+   - control: include removal (body_text="banish" or "damage"), Ward, and card draw
+   - lore-race: prioritize high lore values (min_lore=2), Evasive characters, and Songs that quest
+   - balanced: even curve, mix of threats and support
+
+## Output Format
+
+Present the final deck as:
+
+```
+## [Deck Name] ([Color1] / [Color2])
+
+### Characters (N)
+- 4x Card Name (Cost) [Traits] — one-line note on role
+
+### Actions (N)
+- Nx Card Name (Cost)
+
+### Items (N)
+- Nx Card Name (Cost)
+
+### Songs (N)
+- Nx Card Name (Cost)
+
+Total: 60 cards
+```
+
+Then add a short paragraph covering: win condition, 2–3 key synergies, and inkable balance."""
+
     return mcp
