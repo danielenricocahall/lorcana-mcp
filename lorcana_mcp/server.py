@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any
 
 from fastmcp import FastMCP
+from fastmcp.server.providers.skills import ClaudeSkillsProvider, SkillsDirectoryProvider
 
 from lorcana_mcp.client import LorcanaApiClient
 from lorcana_mcp.config import LorcanaConfig
@@ -193,6 +194,12 @@ def create_server() -> FastMCP:
     @mcp.tool(description="Return card distribution by set id.")
     def set_distribution() -> dict[str, int]:
         return repository.count_by("card_set_id")
+
+    # Project-level skills take precedence; fall back to ~/.claude/skills/
+    _project_skills = Path(__file__).parent.parent / ".claude" / "skills"
+    if _project_skills.exists():
+        mcp.add_provider(SkillsDirectoryProvider(roots=_project_skills))
+    mcp.add_provider(ClaudeSkillsProvider())
 
     @mcp.tool(description="Show startup metadata for this server instance.")
     def server_status() -> dict[str, Any]:
