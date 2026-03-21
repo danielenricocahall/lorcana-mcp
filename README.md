@@ -1,5 +1,5 @@
 # Lorcana MCP Server
-
+[![MCP Badge](https://lobehub.com/badge/mcp/danielenricocahall-lorcana-mcp)](https://lobehub.com/mcp/danielenricocahall-lorcana-mcp)
 An MCP server for searching and aggregating Disney Lorcana cards. 
 
 ## Startup behavior
