@@ -91,7 +91,11 @@ class CardRepository(ABC):
         lore: int | None = None,
         min_lore: int | None = None,
         max_lore: int | None = None,
+        card_type: str | None = None,
         limit: int = 20,
+        offset: int = 0,
+        sort_by: str = "id",
+        sort_order: str = "asc",
     ) -> list[dict[str, Any]]:
         raise NotImplementedError
 
@@ -132,6 +136,7 @@ class CardRepository(ABC):
         lore: int | None = None,
         min_lore: int | None = None,
         max_lore: int | None = None,
+        card_type: str | None = None,
     ) -> int:
         raise NotImplementedError
 
@@ -216,6 +221,8 @@ class SQLiteCardRepository(CardRepository):
         rows = self._run_query(query.build())
         return int(rows[0].get("count", 0)) if rows else 0
 
+    _SORTABLE_FIELDS = {"id", "name", "cost", "attack", "defence", "stars", "rarity", "card_set_id"}
+
     def _build_filter_clauses(
         self,
         name: str | None,
@@ -235,6 +242,7 @@ class SQLiteCardRepository(CardRepository):
         lore: int | None,
         min_lore: int | None,
         max_lore: int | None,
+        card_type: str | None,
     ) -> list:
         clauses = []
         if name:
@@ -271,6 +279,8 @@ class SQLiteCardRepository(CardRepository):
             clauses.append(self.card_table.stars >= int(min_lore))
         if max_lore is not None:
             clauses.append(self.card_table.stars <= int(max_lore))
+        if card_type:
+            clauses.append(lower(self.card_table.type).like(f"%{card_type.lower()}%"))
         return clauses
 
     def search(
@@ -293,17 +303,28 @@ class SQLiteCardRepository(CardRepository):
         lore: int | None = None,
         min_lore: int | None = None,
         max_lore: int | None = None,
+        card_type: str | None = None,
         limit: int = 20,
+        offset: int = 0,
+        sort_by: str = "id",
+        sort_order: str = "asc",
     ) -> list[dict[str, Any]]:
         limited = max(1, min(limit, 200))
+        paged = max(0, offset)
+        sort_field = sort_by if sort_by in self._SORTABLE_FIELDS else "id"
         clauses = self._build_filter_clauses(
             name, color, cost, min_cost, max_cost, trait, rarity, inkwell, card_set_id,
             min_attack, max_attack, min_defence, max_defence, body_text, lore, min_lore, max_lore,
+            card_type,
         )
         query = self.card_table.select("*")
         if clauses:
             query = query.where(*clauses)
-        query = query.order_by(self.card_table.id).limit(limited)
+        sort_column = getattr(self.card_table, sort_field)
+        if sort_order.lower() == "desc":
+            query = query.order_by(sort_column.desc()).limit(limited).offset(paged)
+        else:
+            query = query.order_by(sort_column).limit(limited).offset(paged)
         return self._run_query(query.build())
 
     def get_by_id(self, card_id: int) -> dict[str, Any] | None:
@@ -331,10 +352,12 @@ class SQLiteCardRepository(CardRepository):
         lore: int | None = None,
         min_lore: int | None = None,
         max_lore: int | None = None,
+        card_type: str | None = None,
     ) -> int:
         clauses = self._build_filter_clauses(
             name, color, cost, min_cost, max_cost, trait, rarity, inkwell, card_set_id,
             min_attack, max_attack, min_defence, max_defence, body_text, lore, min_lore, max_lore,
+            card_type,
         )
         query = self.card_table.select(count(self.card_table.id).as_("count"))
         if clauses:
