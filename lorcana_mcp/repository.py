@@ -10,7 +10,7 @@ from typing import Any
 
 from pysqlscribe.aggregate_functions import count
 from pysqlscribe.scalar_functions import lower
-from pysqlscribe.table import SqliteTable
+from pysqlscribe.table import Table as SqliteTable
 
 from pysqlscribe.utils.ddl_loader import load_tables_from_ddls
 
@@ -321,11 +321,9 @@ class SQLiteCardRepository(CardRepository):
         if clauses:
             query = query.where(*clauses)
         sort_column = getattr(self.card_table, sort_field)
-        query = query.order_by(sort_column).limit(limited).offset(paged)
-        sql = query.build()
-        if sort_order.lower() == "desc":
-            sql = sql.replace(f'ORDER BY "{sort_field}"', f'ORDER BY "{sort_field}" DESC', 1)
-        return self._run_query(sql)
+        ordered = sort_column.desc() if sort_order.lower() == "desc" else sort_column.asc()
+        query = query.order_by(ordered).limit(limited).offset(paged)
+        return self._run_query(query.build())
 
     def get_by_id(self, card_id: int) -> dict[str, Any] | None:
         query = self.card_table.select("*").where(self.card_table.id == card_id).limit(1)
