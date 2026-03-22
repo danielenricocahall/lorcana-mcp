@@ -321,11 +321,11 @@ class SQLiteCardRepository(CardRepository):
         if clauses:
             query = query.where(*clauses)
         sort_column = getattr(self.card_table, sort_field)
+        query = query.order_by(sort_column).limit(limited).offset(paged)
+        sql = query.build()
         if sort_order.lower() == "desc":
-            query = query.order_by(sort_column.desc()).limit(limited).offset(paged)
-        else:
-            query = query.order_by(sort_column).limit(limited).offset(paged)
-        return self._run_query(query.build())
+            sql = sql.replace(f'ORDER BY "{sort_field}"', f'ORDER BY "{sort_field}" DESC', 1)
+        return self._run_query(sql)
 
     def get_by_id(self, card_id: int) -> dict[str, Any] | None:
         query = self.card_table.select("*").where(self.card_table.id == card_id).limit(1)
