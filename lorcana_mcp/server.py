@@ -65,10 +65,14 @@ def create_server() -> FastMCP:
         description=(
             "Search Lorcana cards with optional filters. Returns card objects (not counts). "
             "Color must be one of: ruby, sapphire, emerald, amber, amethyst, steel. "
+            "Use card_type to filter by card type: glimmer, action, item, song, or location. "
             "Use min_attack/max_attack and min_defence/max_defence for stat-based queries "
             "(e.g. 'characters with 4+ attack'). Use min_cost/max_cost for cost ranges. "
             "Use body_text to search card ability text (e.g. 'Evasive', 'Singer', 'Reckless'). "
             "Use lore/min_lore/max_lore to filter by lore value (stars). "
+            "Use sort_by to order results (id, name, cost, attack, defence, stars, rarity, card_set_id); "
+            "use sort_order='asc' or 'desc'. "
+            "Use offset to paginate through results (e.g. offset=20 for the next page). "
             "Use count_cards instead if you only need a total count."
         )
     )
@@ -90,7 +94,11 @@ def create_server() -> FastMCP:
         lore: int | None = None,
         min_lore: int | None = None,
         max_lore: int | None = None,
+        card_type: str | None = None,
         limit: int = 20,
+        offset: int = 0,
+        sort_by: str = "id",
+        sort_order: str = "asc",
     ) -> list[dict[str, Any]]:
         return repository.search(
             name=name,
@@ -110,7 +118,11 @@ def create_server() -> FastMCP:
             lore=lore,
             min_lore=min_lore,
             max_lore=max_lore,
+            card_type=card_type,
             limit=limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_order=sort_order,
         )
 
     @mcp.tool(description="Get a single Lorcana card by id.")
@@ -124,6 +136,7 @@ def create_server() -> FastMCP:
             "Supports stat ranges: min_attack/max_attack, min_defence/max_defence, min_cost/max_cost. "
             "Use body_text to match card ability text (e.g. 'Singer 5', 'Evasive', 'Reckless'). "
             "Use lore/min_lore/max_lore to filter by lore value (stars). "
+            "Use card_type to filter by card type: glimmer, action, item, song, or location. "
             "Color must be one of: ruby, sapphire, emerald, amber, amethyst, steel."
         )
     )
@@ -145,6 +158,7 @@ def create_server() -> FastMCP:
         lore: int | None = None,
         min_lore: int | None = None,
         max_lore: int | None = None,
+        card_type: str | None = None,
     ) -> int:
         return repository.count(
             name=name,
@@ -164,6 +178,7 @@ def create_server() -> FastMCP:
             lore=lore,
             min_lore=min_lore,
             max_lore=max_lore,
+            card_type=card_type,
         )
 
     @mcp.tool(
