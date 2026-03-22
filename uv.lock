@@ -587,7 +587,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.135.1" },
     { name = "fastmcp", specifier = ">=3.1.0" },
-    { name = "pysqlscribe", specifier = ">=0.10.2" },
+    { name = "pysqlscribe", specifier = ">=0.11.0" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "requests", specifier = ">=2.32.5" },
 ]
@@ -866,11 +866,11 @@ wheels = [
 
 [[package]]
 name = "pysqlscribe"
-version = "0.10.2"
+version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/f2/cc/376f737889b194d4cb89ad4e02a9d473dca019c8d6ef7baa630144aaecd3/pysqlscribe-0.10.2.tar.gz", hash = "sha256:1f747d612de23c97902f41b6b1d23f3ea914acb77ad785201034212cec2a6309", size = 25223, upload-time = "2026-03-07T01:37:31.801Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ed/f0/73bed4616c1a386a00103837f2d56b494b5b768f1a0447a19981c7178cb6/pysqlscribe-0.11.0.tar.gz", hash = "sha256:240f1e6be5e30aa286d17b360f2c4cb4ff5bfa0823fc912303610b4362f703bd", size = 25255, upload-time = "2026-03-22T14:11:18.124Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/72/37/4932a30d505a49f8b7ca3899dc8a2739228a6a32a6414c5dd4570c558184/pysqlscribe-0.10.2-py3-none-any.whl", hash = "sha256:8d57bf4a28081d82b9c0f20ef89d71bc190573bb47ba08b2e473324573c0d8a7", size = 25725, upload-time = "2026-03-07T01:37:30.805Z" },
+    { url = "https://files.pythonhosted.org/packages/4e/dc/009d1d5d243e27aa6f2da4fb3135ac70ebcc63f1b753f6833ffb62bc7c3d/pysqlscribe-0.11.0-py3-none-any.whl", hash = "sha256:1bc29408cd97422f7d1bd0e38bee2931b962e85b597ac7f65e7a6242cc04aa6c", size = 25025, upload-time = "2026-03-22T14:11:16.667Z" },
 ]
 
 [[package]]
