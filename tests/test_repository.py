@@ -14,7 +14,7 @@ SAMPLE_CARDS = [
         "colors": "4",
         "traits": '["Hero", "Captain"]',
         "card_set_id": 1,
-        "type": "Character",
+        "type": "glimmer",
         "attack": 2,
         "defence": 3,
         "stars": 1,
@@ -30,7 +30,7 @@ SAMPLE_CARDS = [
         "colors": "5",
         "traits": '["Queen"]',
         "card_set_id": 2,
-        "type": "Character",
+        "type": "glimmer",
         "attack": 4,
         "defence": 4,
         "stars": 3,
@@ -46,7 +46,7 @@ SAMPLE_CARDS = [
         "colors": "4",
         "traits": "Princess|Hero",
         "card_set_id": 2,
-        "type": "Character",
+        "type": "glimmer",
         "attack": 1,
         "defence": 2,
         "stars": 1,
@@ -62,7 +62,7 @@ SAMPLE_CARDS = [
         "colors": "5",
         "traits": "[]",
         "card_set_id": 1,
-        "type": "Song",
+        "type": "song",
         "attack": None,
         "defence": None,
         "stars": 0,
@@ -108,25 +108,25 @@ def test_search_card_type_filter(tmp_path: Path):
     repo = SQLiteCardRepository(tmp_path / "cards.db")
     repo.load_cards(SAMPLE_CARDS)
 
-    characters = repo.search(card_type="Character")
-    assert len(characters) == 3
-    assert all(c["type"] == "Character" for c in characters)
+    glimmers = repo.search(card_type="glimmer")
+    assert len(glimmers) == 3
+    assert all(c["type"] == "glimmer" for c in glimmers)
 
-    songs = repo.search(card_type="Song")
+    songs = repo.search(card_type="song")
     assert len(songs) == 1
     assert songs[0]["name"] == "Let It Go"
 
     # case-insensitive
-    assert len(repo.search(card_type="character")) == 3
+    assert len(repo.search(card_type="Glimmer")) == 3
 
 
 def test_count_card_type_filter(tmp_path: Path):
     repo = SQLiteCardRepository(tmp_path / "cards.db")
     repo.load_cards(SAMPLE_CARDS)
 
-    assert repo.count(card_type="Character") == 3
-    assert repo.count(card_type="Song") == 1
-    assert repo.count(card_type="Item") == 0
+    assert repo.count(card_type="glimmer") == 3
+    assert repo.count(card_type="song") == 1
+    assert repo.count(card_type="item") == 0
 
 
 def test_search_pagination(tmp_path: Path):

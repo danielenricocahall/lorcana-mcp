@@ -65,7 +65,7 @@ def create_server() -> FastMCP:
         description=(
             "Search Lorcana cards with optional filters. Returns card objects (not counts). "
             "Color must be one of: ruby, sapphire, emerald, amber, amethyst, steel. "
-            "Use card_type to filter by card type: Character, Action, Item, or Song. "
+            "Use card_type to filter by card type: glimmer, action, item, song, or location. "
             "Use min_attack/max_attack and min_defence/max_defence for stat-based queries "
             "(e.g. 'characters with 4+ attack'). Use min_cost/max_cost for cost ranges. "
             "Use body_text to search card ability text (e.g. 'Evasive', 'Singer', 'Reckless'). "
@@ -136,7 +136,7 @@ def create_server() -> FastMCP:
             "Supports stat ranges: min_attack/max_attack, min_defence/max_defence, min_cost/max_cost. "
             "Use body_text to match card ability text (e.g. 'Singer 5', 'Evasive', 'Reckless'). "
             "Use lore/min_lore/max_lore to filter by lore value (stars). "
-            "Use card_type to filter by card type: Character, Action, Item, or Song. "
+            "Use card_type to filter by card type: glimmer, action, item, song, or location. "
             "Color must be one of: ruby, sapphire, emerald, amber, amethyst, steel."
         )
     )
