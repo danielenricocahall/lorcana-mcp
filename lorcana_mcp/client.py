@@ -6,23 +6,36 @@ import requests
 
 from lorcana_mcp.config import LorcanaConfig
 
-REQUEST_HEADERS = {
-    "accept": "application/json, text/plain, */*",
-    "content-type": "application/json",
-}
 
-REQUEST_PAYLOAD = {
-    "colors": [],
-    "sets": [],
-    "traits": [],
-    "keywords": [],
-    "costs": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-    "inkwell": [],
-    "rarity": [],
-    "language": "English",
-    "options": [],
-    "sorting": "default",
-}
+def _normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
+    """Map lorcanajson.org fields to our internal schema column names."""
+    images = raw.get("images") or {}
+    return {
+        "id": raw.get("id"),
+        "name": raw.get("name"),
+        "version": raw.get("version"),
+        "full_name": raw.get("fullName"),
+        "simple_name": raw.get("simpleName"),
+        "cost": raw.get("cost"),
+        "inkwell": raw.get("inkwell"),
+        "strength": raw.get("strength"),
+        "willpower": raw.get("willpower"),
+        "color": raw.get("color"),
+        "type": raw.get("type"),
+        "full_text": raw.get("fullText"),
+        "flavor_text": raw.get("flavorText"),
+        "lore": raw.get("lore"),
+        "artists": raw.get("artistsText"),
+        "set_code": raw.get("setCode"),
+        "number": raw.get("number"),
+        "rarity": raw.get("rarity"),
+        "image_full": images.get("full"),
+        "image_thumbnail": images.get("thumbnail"),
+        "story": raw.get("story"),
+        "subtypes": raw.get("subtypesText"),
+        "abilities": raw.get("fullText"),
+        "full_identifier": raw.get("fullIdentifier"),
+    }
 
 
 class LorcanaApiClient:
@@ -30,18 +43,16 @@ class LorcanaApiClient:
         self._config = config
 
     def fetch_cards(self) -> list[dict[str, Any]]:
-        response = requests.post(
+        response = requests.get(
             self._config.api_url,
-            headers=REQUEST_HEADERS,
-            json=REQUEST_PAYLOAD,
             timeout=self._config.request_timeout_seconds,
         )
         response.raise_for_status()
         results = response.json()
 
-        if isinstance(results, dict) and isinstance(results.get("cards"), list):
-            return [card for card in results["cards"] if isinstance(card, dict)]
         if isinstance(results, list):
-            return [card for card in results if isinstance(card, dict)]
+            return [_normalize_card(card) for card in results if isinstance(card, dict)]
+        if isinstance(results, dict) and isinstance(results.get("cards"), list):
+            return [_normalize_card(card) for card in results["cards"] if isinstance(card, dict)]
 
         raise ValueError("Unexpected Lorcana API response format.")

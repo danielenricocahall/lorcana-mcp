@@ -14,7 +14,7 @@ def _env_bool(name: str, default: bool) -> bool:
 
 @dataclass(frozen=True)
 class LorcanaConfig:
-    api_url: str = os.getenv("LORCANA_API", "https://lorcania.com/api/cardsSearch")
+    api_url: str = os.getenv("LORCANA_API", "https://lorcanajson.org/files/current/en/allCards.json")
     storage_backend: str = os.getenv("LORCANA_STORAGE_BACKEND", "sqlite").strip().lower()
     db_path: Path = Path(os.getenv("LORCANA_DB_PATH", "cards.db"))
     request_timeout_seconds: float = float(os.getenv("LORCANA_HTTP_TIMEOUT_SECONDS", "60"))
