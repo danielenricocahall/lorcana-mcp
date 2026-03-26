@@ -4,12 +4,7 @@
 An MCP server for searching and aggregating Disney Lorcana cards. 
 
 ## Startup behavior
-On startup, the server sends a POST request to `https://lorcania.com/api/cardsSearch` with:
-
-- `colors`, `sets`, `traits`, `keywords`, `inkwell`, `rarity`, `options`: empty arrays
-- `costs`: `[1..10]`
-- `language`: `English`
-- `sorting`: `default`
+On startup, the server fetches all cards from [lorcanajson.org](https://lorcanajson.org) via a GET request to `https://lorcanajson.org/files/current/en/allCards.json`.
 
 The server stores cards in sqlite by default (`LORCANA_STORAGE_BACKEND=sqlite`).
 
@@ -72,7 +67,7 @@ Notes:
 - Use a volume (as above) to persist sqlite cache across restarts.
 
 ## Config
-- `LORCANA_API` (default: `https://lorcania.com/api/cardsSearch`)
+- `LORCANA_API` (default: `https://lorcanajson.org/files/current/en/allCards.json`)
 - `LORCANA_STORAGE_BACKEND` (`sqlite` default, or `memory`)
 - `LORCANA_DB_PATH` (default: `cards.db`)
 - `LORCANA_HTTP_TIMEOUT_SECONDS` (default: `30`)
@@ -190,9 +185,9 @@ Once connected to an MCP client, you can ask natural language questions like:
 - "Find all legendary amber cards"
 
 **Deck building**
-- "What are the cheapest ruby characters with at least 3 attack?"
+- "What are the cheapest ruby characters with at least 3 strength?"
 - "Show me inkable sapphire cards that cost 4 or less"
-- "Find steel characters with 5 or more defence"
+- "Find steel characters with 5 or more willpower"
 - "What 3-lore characters exist in emerald?"
 
 **Keyword & ability search**
@@ -211,10 +206,10 @@ Once connected to an MCP client, you can ask natural language questions like:
 
 **Cross-filter queries**
 - "How many amber characters have 3 or more lore?"
-- "Find cheap (cost 2-3) characters with high attack (4+) in steel"
+- "Find cheap (cost 2-3) characters with high strength (4+) in steel"
 - "How many cards in set 1 have Evasive and cost less than 4?"
 
-> **Note:** The `action` (ability text) field is stored as raw HTML from the API. Keyword searches like `Evasive`, `Singer 5`, or `Reckless` work reliably since the keyword word appears verbatim, but complex phrase searches may be slightly noisy. Sanitizing the action text is a planned improvement.
+> **Note:** Keyword searches like `Evasive`, `Singer 5`, or `Reckless` match against the `full_text` field and work reliably since keywords appear verbatim in card text.
 
 ## MCP tools
 - `search_cards` — filter and retrieve card objects
