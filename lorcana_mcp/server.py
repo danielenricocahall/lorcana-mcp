@@ -65,13 +65,14 @@ def create_server() -> FastMCP:
         description=(
             "Search Lorcana cards with optional filters. Returns card objects (not counts). "
             "Color must be one of: ruby, sapphire, emerald, amber, amethyst, steel. "
-            "Use card_type to filter by card type: glimmer, action, item, song, or location. "
+            "Use card_type to filter by card type: Character, Action, Item, Song, or Location. "
             "Use min_attack/max_attack and min_defence/max_defence for stat-based queries "
-            "(e.g. 'characters with 4+ attack'). Use min_cost/max_cost for cost ranges. "
+            "(e.g. 'characters with 4+ strength'). Use min_cost/max_cost for cost ranges. "
             "Use body_text to search card ability text (e.g. 'Evasive', 'Singer', 'Reckless'). "
-            "Use lore/min_lore/max_lore to filter by lore value (stars). "
-            "Use sort_by to order results (id, name, cost, attack, defence, stars, rarity, card_set_id); "
+            "Use lore/min_lore/max_lore to filter by lore value. "
+            "Use sort_by to order results (id, name, cost, strength, willpower, lore, rarity, set_code); "
             "use sort_order='asc' or 'desc'. "
+            "Use set_code to filter by set number (e.g. '1' for The First Chapter). "
             "Use offset to paginate through results (e.g. offset=20 for the next page). "
             "Use count_cards instead if you only need a total count."
         )
@@ -85,7 +86,7 @@ def create_server() -> FastMCP:
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
-        card_set_id: int | None = None,
+        set_code: str | None = None,
         min_attack: int | None = None,
         max_attack: int | None = None,
         min_defence: int | None = None,
@@ -109,7 +110,7 @@ def create_server() -> FastMCP:
             trait=trait,
             rarity=rarity,
             inkwell=inkwell,
-            card_set_id=card_set_id,
+            set_code=set_code,
             min_attack=min_attack,
             max_attack=max_attack,
             min_defence=min_defence,
@@ -135,8 +136,9 @@ def create_server() -> FastMCP:
             "'how many ruby cards are there?' or 'how many legendary inkwell cards cost 3?'. "
             "Supports stat ranges: min_attack/max_attack, min_defence/max_defence, min_cost/max_cost. "
             "Use body_text to match card ability text (e.g. 'Singer 5', 'Evasive', 'Reckless'). "
-            "Use lore/min_lore/max_lore to filter by lore value (stars). "
-            "Use card_type to filter by card type: glimmer, action, item, song, or location. "
+            "Use lore/min_lore/max_lore to filter by lore value. "
+            "Use card_type to filter by card type: Character, Action, Item, Song, or Location. "
+            "Use set_code to filter by set number (e.g. '1' for The First Chapter). "
             "Color must be one of: ruby, sapphire, emerald, amber, amethyst, steel."
         )
     )
@@ -149,7 +151,7 @@ def create_server() -> FastMCP:
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
-        card_set_id: int | None = None,
+        set_code: str | None = None,
         min_attack: int | None = None,
         max_attack: int | None = None,
         min_defence: int | None = None,
@@ -169,7 +171,7 @@ def create_server() -> FastMCP:
             trait=trait,
             rarity=rarity,
             inkwell=inkwell,
-            card_set_id=card_set_id,
+            set_code=set_code,
             min_attack=min_attack,
             max_attack=max_attack,
             min_defence=min_defence,
@@ -205,9 +207,9 @@ def create_server() -> FastMCP:
     def rarity_breakdown() -> dict[str, int]:
         return repository.count_by("rarity")
 
-    @mcp.tool(description="Return card distribution by set id.")
+    @mcp.tool(description="Return card distribution by set code.")
     def set_distribution() -> dict[str, int]:
-        return repository.count_by("card_set_id")
+        return repository.count_by("set_code")
 
     @mcp.tool(description="Show startup metadata for this server instance.")
     def server_status() -> dict[str, Any]:

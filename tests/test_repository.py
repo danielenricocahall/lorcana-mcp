@@ -7,66 +7,74 @@ SAMPLE_CARDS = [
     {
         "id": 1,
         "name": "Mickey Mouse",
+        "version": "Brave Little Tailor",
+        "full_name": "Mickey Mouse - Brave Little Tailor",
+        "simple_name": "mickey mouse brave little tailor",
         "cost": 3,
         "inkwell": 1,
         "rarity": "Common",
-        "color": 4,  # amber
-        "colors": "4",
-        "traits": '["Hero", "Captain"]',
-        "card_set_id": 1,
-        "type": "glimmer",
-        "attack": 2,
-        "defence": 3,
-        "stars": 1,
-        "action": "Evasive",
+        "color": "Amber",
+        "subtypes": "Hero • Captain",
+        "set_code": "1",
+        "type": "Character",
+        "strength": 2,
+        "willpower": 3,
+        "lore": 1,
+        "full_text": "Evasive",
     },
     {
         "id": 2,
         "name": "Elsa",
+        "version": "Spirit of Winter",
+        "full_name": "Elsa - Spirit of Winter",
+        "simple_name": "elsa spirit of winter",
         "cost": 5,
         "inkwell": 0,
         "rarity": "Legendary",
-        "color": 5,  # amethyst
-        "colors": "5",
-        "traits": '["Queen"]',
-        "card_set_id": 2,
-        "type": "glimmer",
-        "attack": 4,
-        "defence": 4,
-        "stars": 3,
-        "action": "Ward",
+        "color": "Amethyst",
+        "subtypes": "Storyborn • Queen",
+        "set_code": "2",
+        "type": "Character",
+        "strength": 4,
+        "willpower": 4,
+        "lore": 3,
+        "full_text": "Ward",
     },
     {
         "id": 3,
         "name": "Anna",
+        "version": "Heir to Arendelle",
+        "full_name": "Anna - Heir to Arendelle",
+        "simple_name": "anna heir to arendelle",
         "cost": 2,
         "inkwell": 1,
         "rarity": "Common",
-        "color": 4,  # amber
-        "colors": "4",
-        "traits": "Princess|Hero",
-        "card_set_id": 2,
-        "type": "glimmer",
-        "attack": 1,
-        "defence": 2,
-        "stars": 1,
-        "action": None,
+        "color": "Amber",
+        "subtypes": "Storyborn • Princess • Hero",
+        "set_code": "2",
+        "type": "Character",
+        "strength": 1,
+        "willpower": 2,
+        "lore": 1,
+        "full_text": None,
     },
     {
         "id": 4,
         "name": "Let It Go",
+        "version": None,
+        "full_name": "Let It Go",
+        "simple_name": "let it go",
         "cost": 4,
         "inkwell": 1,
         "rarity": "Rare",
-        "color": 5,  # amethyst
-        "colors": "5",
-        "traits": "[]",
-        "card_set_id": 1,
-        "type": "song",
-        "attack": None,
-        "defence": None,
-        "stars": 0,
-        "action": "Each opponent loses 2 lore.",
+        "color": "Amethyst",
+        "subtypes": None,
+        "set_code": "1",
+        "type": "Action",
+        "strength": None,
+        "willpower": None,
+        "lore": 0,
+        "full_text": "Each opponent loses 2 lore.",
     },
 ]
 
@@ -96,7 +104,7 @@ def test_sqlite_repository_aggregations(tmp_path: Path):
     assert rarity_counts["Common"] == 2
     assert rarity_counts["Legendary"] == 1
 
-    top_traits = repo.top_traits(limit=2)
+    top_traits = repo.top_traits(limit=3)
     assert top_traits["Hero"] == 2
 
     color_distribution = repo.color_distribution()
@@ -108,24 +116,24 @@ def test_search_card_type_filter(tmp_path: Path):
     repo = SQLiteCardRepository(tmp_path / "cards.db")
     repo.load_cards(SAMPLE_CARDS)
 
-    glimmers = repo.search(card_type="glimmer")
-    assert len(glimmers) == 3
-    assert all(c["type"] == "glimmer" for c in glimmers)
+    characters = repo.search(card_type="character")
+    assert len(characters) == 3
+    assert all(c["type"] == "Character" for c in characters)
 
-    songs = repo.search(card_type="song")
-    assert len(songs) == 1
-    assert songs[0]["name"] == "Let It Go"
+    actions = repo.search(card_type="action")
+    assert len(actions) == 1
+    assert actions[0]["name"] == "Let It Go"
 
     # case-insensitive
-    assert len(repo.search(card_type="Glimmer")) == 3
+    assert len(repo.search(card_type="Character")) == 3
 
 
 def test_count_card_type_filter(tmp_path: Path):
     repo = SQLiteCardRepository(tmp_path / "cards.db")
     repo.load_cards(SAMPLE_CARDS)
 
-    assert repo.count(card_type="glimmer") == 3
-    assert repo.count(card_type="song") == 1
+    assert repo.count(card_type="character") == 3
+    assert repo.count(card_type="action") == 1
     assert repo.count(card_type="item") == 0
 
 

@@ -24,10 +24,7 @@ def _to_scalar(value: Any) -> Any:
 
 
 def _normalize_card(card: dict[str, Any]) -> dict[str, Any]:
-    return {
-        key: _to_scalar(value)
-        for key, value in card.items()
-    }
+    return {key: _to_scalar(value) for key, value in card.items()}
 
 
 def _contains_case_insensitive(value: Any, search: str) -> bool:
@@ -53,8 +50,7 @@ def _parse_listish(value: Any) -> list[str]:
     except json.JSONDecodeError:
         pass
 
-    return [part.strip() for part in re.split(r"[,|]", text) if part.strip()]
-
+    return [part.strip() for part in re.split(r"[,|•]", text) if part.strip()]
 
 
 class CardRepository(ABC):
@@ -82,7 +78,7 @@ class CardRepository(ABC):
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
-        card_set_id: int | None = None,
+        set_code: str | None = None,
         min_attack: int | None = None,
         max_attack: int | None = None,
         min_defence: int | None = None,
@@ -127,7 +123,7 @@ class CardRepository(ABC):
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
-        card_set_id: int | None = None,
+        set_code: str | None = None,
         min_attack: int | None = None,
         max_attack: int | None = None,
         min_defence: int | None = None,
@@ -139,28 +135,6 @@ class CardRepository(ABC):
         card_type: str | None = None,
     ) -> int:
         raise NotImplementedError
-
-    def get_color_based_on_id(self, color_id: str | int) -> str:
-        return self.id_to_color_mapping[color_id]
-
-    def get_id_based_on_color(self, color: str) -> str:
-        return str(self.color_to_id_mapping[color])
-
-    @property
-    def color_to_id_mapping(self):
-        return {
-            "ruby": 1,
-            "sapphire": 2,
-            "emerald": 3,
-            "amber": 4,
-            "amethyst": 5,
-            "steel": 6,
-        }
-
-    @property
-    def id_to_color_mapping(self):
-        return {v: k for k, v in self.color_to_id_mapping.items()}
-
 
 
 class SQLiteCardRepository(CardRepository):
@@ -221,7 +195,7 @@ class SQLiteCardRepository(CardRepository):
         rows = self._run_query(query.build())
         return int(rows[0].get("count", 0)) if rows else 0
 
-    _SORTABLE_FIELDS = {"id", "name", "cost", "attack", "defence", "stars", "rarity", "card_set_id"}
+    _SORTABLE_FIELDS = {"id", "name", "cost", "strength", "willpower", "lore", "rarity", "set_code"}
 
     def _build_filter_clauses(
         self,
@@ -233,7 +207,7 @@ class SQLiteCardRepository(CardRepository):
         trait: str | None,
         rarity: str | None,
         inkwell: bool | None,
-        card_set_id: int | None,
+        set_code: str | None,
         min_attack: int | None,
         max_attack: int | None,
         min_defence: int | None,
@@ -246,7 +220,7 @@ class SQLiteCardRepository(CardRepository):
     ) -> list:
         clauses = []
         if name:
-            clauses.append(lower(self.card_table.name).like(f"%{name}%"))
+            clauses.append(lower(self.card_table.name).like(f"%{name.lower()}%"))
         if cost is not None:
             clauses.append(self.card_table.cost == int(cost))
         if min_cost is not None:
@@ -254,31 +228,31 @@ class SQLiteCardRepository(CardRepository):
         if max_cost is not None:
             clauses.append(self.card_table.cost <= int(max_cost))
         if trait:
-            clauses.append(lower(self.card_table.traits).like(f"%{trait}%"))
+            clauses.append(lower(self.card_table.subtypes).like(f"%{trait.lower()}%"))
         if rarity:
-            clauses.append(lower(self.card_table.rarity) == rarity)
+            clauses.append(lower(self.card_table.rarity) == rarity.lower())
         if inkwell is not None:
             clauses.append(self.card_table.inkwell == (1 if inkwell else 0))
         if color:
-            clauses.append(self.card_table.color == int(self.get_id_based_on_color(color.lower())))
-        if card_set_id is not None:
-            clauses.append(self.card_table.card_set_id == int(card_set_id))
+            clauses.append(lower(self.card_table.color) == color.lower())
+        if set_code is not None:
+            clauses.append(self.card_table.set_code == str(set_code))
         if min_attack is not None:
-            clauses.append(self.card_table.attack >= int(min_attack))
+            clauses.append(self.card_table.strength >= int(min_attack))
         if max_attack is not None:
-            clauses.append(self.card_table.attack <= int(max_attack))
+            clauses.append(self.card_table.strength <= int(max_attack))
         if min_defence is not None:
-            clauses.append(self.card_table.defence >= int(min_defence))
+            clauses.append(self.card_table.willpower >= int(min_defence))
         if max_defence is not None:
-            clauses.append(self.card_table.defence <= int(max_defence))
+            clauses.append(self.card_table.willpower <= int(max_defence))
         if body_text:
-            clauses.append(lower(self.card_table.action).like(f"%{body_text.lower()}%"))
+            clauses.append(lower(self.card_table.full_text).like(f"%{body_text.lower()}%"))
         if lore is not None:
-            clauses.append(self.card_table.stars == int(lore))
+            clauses.append(self.card_table.lore == int(lore))
         if min_lore is not None:
-            clauses.append(self.card_table.stars >= int(min_lore))
+            clauses.append(self.card_table.lore >= int(min_lore))
         if max_lore is not None:
-            clauses.append(self.card_table.stars <= int(max_lore))
+            clauses.append(self.card_table.lore <= int(max_lore))
         if card_type:
             clauses.append(lower(self.card_table.type).like(f"%{card_type.lower()}%"))
         return clauses
@@ -294,7 +268,7 @@ class SQLiteCardRepository(CardRepository):
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
-        card_set_id: int | None = None,
+        set_code: str | None = None,
         min_attack: int | None = None,
         max_attack: int | None = None,
         min_defence: int | None = None,
@@ -313,7 +287,7 @@ class SQLiteCardRepository(CardRepository):
         paged = max(0, offset)
         sort_field = sort_by if sort_by in self._SORTABLE_FIELDS else "id"
         clauses = self._build_filter_clauses(
-            name, color, cost, min_cost, max_cost, trait, rarity, inkwell, card_set_id,
+            name, color, cost, min_cost, max_cost, trait, rarity, inkwell, set_code,
             min_attack, max_attack, min_defence, max_defence, body_text, lore, min_lore, max_lore,
             card_type,
         )
@@ -341,7 +315,7 @@ class SQLiteCardRepository(CardRepository):
         trait: str | None = None,
         rarity: str | None = None,
         inkwell: bool | None = None,
-        card_set_id: int | None = None,
+        set_code: str | None = None,
         min_attack: int | None = None,
         max_attack: int | None = None,
         min_defence: int | None = None,
@@ -353,7 +327,7 @@ class SQLiteCardRepository(CardRepository):
         card_type: str | None = None,
     ) -> int:
         clauses = self._build_filter_clauses(
-            name, color, cost, min_cost, max_cost, trait, rarity, inkwell, card_set_id,
+            name, color, cost, min_cost, max_cost, trait, rarity, inkwell, set_code,
             min_attack, max_attack, min_defence, max_defence, body_text, lore, min_lore, max_lore,
             card_type,
         )
@@ -364,7 +338,6 @@ class SQLiteCardRepository(CardRepository):
         return int(rows[0].get("count", 0)) if rows else 0
 
     def count_by(self, field: str) -> dict[str, int]:
-
         column = getattr(self.card_table, field)
         query = self.card_table.select(column, count(column).as_("count")).group_by(column)
         rows = self._run_query(query.build())
@@ -373,29 +346,20 @@ class SQLiteCardRepository(CardRepository):
 
     def top_traits(self, limit: int = 10) -> dict[str, int]:
         limited = max(1, min(limit, 100))
-        query = self.card_table.select(self.card_table.traits)
+        query = self.card_table.select(self.card_table.subtypes)
         rows = self._run_query(query.build())
         counter = Counter()
         for row in rows:
-            for trait in _parse_listish(row.get("traits")):
+            for trait in _parse_listish(row.get("subtypes")):
                 counter[trait] += 1
         return dict(counter.most_common(limited))
 
     def color_distribution(self) -> dict[str, int]:
-        query = self.card_table.select(self.card_table.colors, self.card_table.color)
+        query = self.card_table.select(self.card_table.color)
         rows = self._run_query(query.build())
         counter = Counter()
         for row in rows:
-            colors = _parse_listish(row.get("colors"))
-            if colors:
-                for color in colors:
-                    try:
-                        color = self.id_to_color_mapping.get(int(color), color)
-                    except (ValueError, TypeError):
-                        pass
-                    counter[color] += 1
-            elif row.get("color") is not None:
-                color_id = row.get("color")
-                color = self.id_to_color_mapping.get(int(color_id), str(color_id))
-                counter[color] += 1
+            color = row.get("color")
+            if color:
+                counter[color.lower()] += 1
         return dict(counter.most_common())
