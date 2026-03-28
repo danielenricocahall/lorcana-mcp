@@ -1,6 +1,19 @@
 from pathlib import Path
 
-from lorcana_mcp.repository import SQLiteCardRepository
+import pytest
+
+from lorcana_mcp.repository import InMemoryCardRepository, SQLiteCardRepository
+
+
+@pytest.fixture(params=["sqlite", "memory"])
+def repo(request, tmp_path):
+    if request.param == "sqlite":
+        r = SQLiteCardRepository(tmp_path / "cards.db")
+    else:
+        r = InMemoryCardRepository()
+    r.load_cards(SAMPLE_CARDS)
+    return r
+
 
 SAMPLE_CARDS = [
     {
@@ -78,11 +91,7 @@ SAMPLE_CARDS = [
 ]
 
 
-def test_sqlite_repository_load_and_query(tmp_path: Path):
-    repo = SQLiteCardRepository(tmp_path / "cards.db")
-    loaded = repo.load_cards(SAMPLE_CARDS)
-
-    assert loaded == 4
+def test_repository_load_and_query(repo):
     assert repo.has_cards() is True
     assert repo.total_cards() == 4
 
@@ -95,10 +104,7 @@ def test_sqlite_repository_load_and_query(tmp_path: Path):
     assert by_id["name"] == "Mickey Mouse"
 
 
-def test_sqlite_repository_aggregations(tmp_path: Path):
-    repo = SQLiteCardRepository(tmp_path / "cards.db")
-    repo.load_cards(SAMPLE_CARDS)
-
+def test_repository_aggregations(repo):
     rarity_counts = repo.count_by("rarity")
     assert rarity_counts["Common"] == 2
     assert rarity_counts["Legendary"] == 1
@@ -111,10 +117,7 @@ def test_sqlite_repository_aggregations(tmp_path: Path):
     assert color_distribution["amethyst"] == 2
 
 
-def test_search_card_type_filter(tmp_path: Path):
-    repo = SQLiteCardRepository(tmp_path / "cards.db")
-    repo.load_cards(SAMPLE_CARDS)
-
+def test_search_card_type_filter(repo):
     characters = repo.search(card_type="character")
     assert len(characters) == 3
     assert all(c["type"] == "Character" for c in characters)
@@ -123,23 +126,16 @@ def test_search_card_type_filter(tmp_path: Path):
     assert len(actions) == 1
     assert actions[0]["name"] == "Let It Go"
 
-    # case-insensitive
     assert len(repo.search(card_type="Character")) == 3
 
 
-def test_count_card_type_filter(tmp_path: Path):
-    repo = SQLiteCardRepository(tmp_path / "cards.db")
-    repo.load_cards(SAMPLE_CARDS)
-
+def test_count_card_type_filter(repo):
     assert repo.count(card_type="character") == 3
     assert repo.count(card_type="action") == 1
     assert repo.count(card_type="item") == 0
 
 
-def test_search_pagination(tmp_path: Path):
-    repo = SQLiteCardRepository(tmp_path / "cards.db")
-    repo.load_cards(SAMPLE_CARDS)
-
+def test_search_pagination(repo):
     page1 = repo.search(limit=2, offset=0)
     page2 = repo.search(limit=2, offset=2)
 
@@ -151,10 +147,7 @@ def test_search_pagination(tmp_path: Path):
     assert all_ids == {1, 2, 3, 4}
 
 
-def test_search_sorting(tmp_path: Path):
-    repo = SQLiteCardRepository(tmp_path / "cards.db")
-    repo.load_cards(SAMPLE_CARDS)
-
+def test_search_sorting(repo):
     asc = repo.search(sort_by="cost", sort_order="asc")
     costs_asc = [r["cost"] for r in asc]
     assert costs_asc == sorted(costs_asc)
@@ -164,10 +157,19 @@ def test_search_sorting(tmp_path: Path):
     assert costs_desc == sorted(costs_desc, reverse=True)
 
 
-def test_search_sort_invalid_field_falls_back_to_id(tmp_path: Path):
-    repo = SQLiteCardRepository(tmp_path / "cards.db")
-    repo.load_cards(SAMPLE_CARDS)
-
+def test_search_sort_invalid_field_falls_back_to_id(repo):
     results = repo.search(sort_by="not_a_column")
     ids = [r["id"] for r in results]
     assert ids == sorted(ids)
+
+
+def test_in_memory_cache_persistence(tmp_path: Path):
+    cache = tmp_path / "cards.json"
+    repo = InMemoryCardRepository(cache_path=cache)
+    repo.load_cards(SAMPLE_CARDS)
+    assert cache.exists()
+
+    repo2 = InMemoryCardRepository(cache_path=cache)
+    assert repo2.has_cards() is True
+    assert repo2.total_cards() == 4
+    assert repo2.get_by_id(1)["name"] == "Mickey Mouse"

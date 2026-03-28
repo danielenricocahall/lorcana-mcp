@@ -9,6 +9,7 @@ from fastmcp import FastMCP
 from lorcana_mcp.client import LorcanaApiClient
 from lorcana_mcp.config import LorcanaConfig
 from lorcana_mcp.repository import (
+    InMemoryCardRepository,
     SQLiteCardRepository,
 )
 
@@ -18,9 +19,10 @@ def _get_version() -> str:
     return tomllib.loads(pyproject.read_text())["project"]["version"]
 
 
-def _build_repository(config: LorcanaConfig):
+def _build_repository(config: LorcanaConfig) -> InMemoryCardRepository | SQLiteCardRepository:
     if config.storage_backend == "sqlite":
         return SQLiteCardRepository(config.db_path)
+    return InMemoryCardRepository(config.cache_path)
 
 
 def create_server() -> FastMCP:
@@ -29,7 +31,7 @@ def create_server() -> FastMCP:
 
     api_client = LorcanaApiClient(config)
 
-    repository = SQLiteCardRepository(config.db_path)
+    repository = _build_repository(config)
     loaded_from_cache = not config.refresh_on_startup and config.skip_if_db_exists and repository.has_cards()
 
     if not loaded_from_cache:
