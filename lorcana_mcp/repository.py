@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import difflib
 import json
 import re
 import sqlite3
@@ -11,10 +12,12 @@ from typing import Any
 from pysqlscribe.aggregate_functions import count
 from pysqlscribe.scalar_functions import lower
 from pysqlscribe.table import Table as SqliteTable
-
 from pysqlscribe.utils.ddl_loader import load_tables_from_ddls
 
 DDL_PATH = Path(__file__).resolve().parent.parent / "ddl" / "create_card_table.sql"
+
+
+_JSON_COLUMNS = {"abilities"}
 
 
 def _to_scalar(value: Any) -> Any:
@@ -25,6 +28,18 @@ def _to_scalar(value: Any) -> Any:
 
 def _normalize_card(card: dict[str, Any]) -> dict[str, Any]:
     return {key: _to_scalar(value) for key, value in card.items()}
+
+
+def _deserialize_card(card: dict[str, Any]) -> dict[str, Any]:
+    result = dict(card)
+    for col in _JSON_COLUMNS:
+        raw = result.get(col)
+        if isinstance(raw, str):
+            try:
+                result[col] = json.loads(raw)
+            except (json.JSONDecodeError, ValueError):
+                pass
+    return result
 
 
 def _contains_case_insensitive(value: Any, search: str) -> bool:
@@ -112,6 +127,10 @@ class CardRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def resolve_card(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
+        raise NotImplementedError
+
+    @abstractmethod
     def count(
         self,
         *,
@@ -138,9 +157,10 @@ class CardRepository(ABC):
 
 
 class SQLiteCardRepository(CardRepository):
-    def __init__(self, db_path: Path, initial_load: bool = True) -> None:
+    def __init__(self, db_path: Path) -> None:
         self._db_path = db_path
         self._card_table = None
+        self._card_cache: list[dict[str, Any]] | None = None
         self._create_schema()
         self.card_table = load_tables_from_ddls(str(DDL_PATH), "sqlite")["lorcana_cards"]
 
@@ -183,6 +203,7 @@ class SQLiteCardRepository(CardRepository):
             sql = self.card_table.insert(*columns, values=placeholders).build()
             values = [tuple(card.get(column) for column in columns) for card in normalized]
             conn.executemany(sql, values)
+        self._card_cache = None
         return len(normalized)
 
     def has_cards(self) -> bool:
@@ -287,8 +308,23 @@ class SQLiteCardRepository(CardRepository):
         paged = max(0, offset)
         sort_field = sort_by if sort_by in self._SORTABLE_FIELDS else "id"
         clauses = self._build_filter_clauses(
-            name, color, cost, min_cost, max_cost, trait, rarity, inkwell, set_code,
-            min_attack, max_attack, min_defence, max_defence, body_text, lore, min_lore, max_lore,
+            name,
+            color,
+            cost,
+            min_cost,
+            max_cost,
+            trait,
+            rarity,
+            inkwell,
+            set_code,
+            min_attack,
+            max_attack,
+            min_defence,
+            max_defence,
+            body_text,
+            lore,
+            min_lore,
+            max_lore,
             card_type,
         )
         query = self.card_table.select("*")
@@ -297,12 +333,36 @@ class SQLiteCardRepository(CardRepository):
         sort_column = getattr(self.card_table, sort_field)
         ordered = sort_column.desc() if sort_order.lower() == "desc" else sort_column.asc()
         query = query.order_by(ordered).limit(limited).offset(paged)
-        return self._run_query(query.build())
+        return [_deserialize_card(c) for c in self._run_query(query.build())]
 
     def get_by_id(self, card_id: int) -> dict[str, Any] | None:
         query = self.card_table.select("*").where(self.card_table.id == card_id).limit(1)
         rows = self._run_query(query.build())
-        return rows[0] if rows else None
+        return _deserialize_card(rows[0]) if rows else None
+
+    def resolve_card(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
+        if self._card_cache is None:
+            self._card_cache = self._run_query(self.card_table.select("*").build())
+        rows = self._card_cache
+        query_lower = query.lower().strip()
+        tokens = [t for t in re.split(r"[\s\-]+", re.sub(r"[^\w\s\-]", " ", query_lower)) if t]
+
+        scored = []
+        for card in rows:
+            full = (card.get("full_name") or "").lower()
+            name = (card.get("name") or "").lower()
+            token_hits = sum(1 for t in tokens if t in full or t in name)
+            token_score = token_hits / max(len(tokens), 1)
+            seq_score = max(
+                difflib.SequenceMatcher(None, query_lower, full).ratio(),
+                difflib.SequenceMatcher(None, query_lower, name).ratio(),
+            )
+            score = 0.6 * token_score + 0.4 * seq_score
+            if score > 0:
+                scored.append((score, card))
+
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [_deserialize_card(card) for _, card in scored[:limit]]
 
     def count(
         self,
@@ -327,8 +387,23 @@ class SQLiteCardRepository(CardRepository):
         card_type: str | None = None,
     ) -> int:
         clauses = self._build_filter_clauses(
-            name, color, cost, min_cost, max_cost, trait, rarity, inkwell, set_code,
-            min_attack, max_attack, min_defence, max_defence, body_text, lore, min_lore, max_lore,
+            name,
+            color,
+            cost,
+            min_cost,
+            max_cost,
+            trait,
+            rarity,
+            inkwell,
+            set_code,
+            min_attack,
+            max_attack,
+            min_defence,
+            max_defence,
+            body_text,
+            lore,
+            min_lore,
+            max_lore,
             card_type,
         )
         query = self.card_table.select(count(self.card_table.id).as_("count"))
