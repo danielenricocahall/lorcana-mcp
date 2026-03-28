@@ -197,8 +197,8 @@ class InMemoryCardRepository(CardRepository):
 
     _SORTABLE_FIELDS = {"id", "name", "cost", "strength", "willpower", "lore", "rarity", "set_code"}
 
+    @staticmethod
     def _filter(
-        self,
         cards: list[dict[str, Any]],
         *,
         name: str | None,
