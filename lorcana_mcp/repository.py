@@ -127,8 +127,27 @@ class CardRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def resolve_card(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
+    def _all_cards(self) -> list[dict[str, Any]]:
         raise NotImplementedError
+
+    def resolve_card(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
+        query_lower = query.lower().strip()
+        tokens = [t for t in re.split(r"[\s\-]+", re.sub(r"[^\w\s\-]", " ", query_lower)) if t]
+        scored = []
+        for card in self._all_cards():
+            full = (card.get("full_name") or "").lower()
+            name = (card.get("name") or "").lower()
+            token_hits = sum(1 for t in tokens if t in full or t in name)
+            token_score = token_hits / max(len(tokens), 1)
+            seq_score = max(
+                difflib.SequenceMatcher(None, query_lower, full).ratio(),
+                difflib.SequenceMatcher(None, query_lower, name).ratio(),
+            )
+            score = 0.6 * token_score + 0.4 * seq_score
+            if score > 0:
+                scored.append((score, card))
+        scored.sort(key=lambda x: x[0], reverse=True)
+        return [card for _, card in scored[:limit]]
 
     @abstractmethod
     def count(
@@ -367,24 +386,8 @@ class InMemoryCardRepository(CardRepository):
                 counter[color.lower()] += 1
         return dict(counter.most_common())
 
-    def resolve_card(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
-        query_lower = query.lower().strip()
-        tokens = [t for t in re.split(r"[\s\-]+", re.sub(r"[^\w\s\-]", " ", query_lower)) if t]
-        scored = []
-        for card in self._cards:
-            full = (card.get("full_name") or "").lower()
-            name = (card.get("name") or "").lower()
-            token_hits = sum(1 for t in tokens if t in full or t in name)
-            token_score = token_hits / max(len(tokens), 1)
-            seq_score = max(
-                difflib.SequenceMatcher(None, query_lower, full).ratio(),
-                difflib.SequenceMatcher(None, query_lower, name).ratio(),
-            )
-            score = 0.6 * token_score + 0.4 * seq_score
-            if score > 0:
-                scored.append((score, card))
-        scored.sort(key=lambda x: x[0], reverse=True)
-        return [card for _, card in scored[:limit]]
+    def _all_cards(self) -> list[dict[str, Any]]:
+        return self._cards
 
 
 class SQLiteCardRepository(CardRepository):
@@ -571,29 +574,10 @@ class SQLiteCardRepository(CardRepository):
         rows = self._run_query(query.build())
         return _deserialize_card(rows[0]) if rows else None
 
-    def resolve_card(self, query: str, limit: int = 5) -> list[dict[str, Any]]:
+    def _all_cards(self) -> list[dict[str, Any]]:
         if self._card_cache is None:
-            self._card_cache = self._run_query(self.card_table.select("*").build())
-        rows = self._card_cache
-        query_lower = query.lower().strip()
-        tokens = [t for t in re.split(r"[\s\-]+", re.sub(r"[^\w\s\-]", " ", query_lower)) if t]
-
-        scored = []
-        for card in rows:
-            full = (card.get("full_name") or "").lower()
-            name = (card.get("name") or "").lower()
-            token_hits = sum(1 for t in tokens if t in full or t in name)
-            token_score = token_hits / max(len(tokens), 1)
-            seq_score = max(
-                difflib.SequenceMatcher(None, query_lower, full).ratio(),
-                difflib.SequenceMatcher(None, query_lower, name).ratio(),
-            )
-            score = 0.6 * token_score + 0.4 * seq_score
-            if score > 0:
-                scored.append((score, card))
-
-        scored.sort(key=lambda x: x[0], reverse=True)
-        return [_deserialize_card(card) for _, card in scored[:limit]]
+            self._card_cache = [_deserialize_card(c) for c in self._run_query(self.card_table.select("*").build())]
+        return self._card_cache
 
     def count(
         self,
