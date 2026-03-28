@@ -2,7 +2,6 @@ from pathlib import Path
 
 from lorcana_mcp.repository import SQLiteCardRepository
 
-
 SAMPLE_CARDS = [
     {
         "id": 1,
