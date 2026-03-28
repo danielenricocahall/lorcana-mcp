@@ -23,6 +23,4 @@ class LorcanaConfig:
 
     def validate(self) -> None:
         if self.storage_backend not in {"memory", "sqlite"}:
-            raise ValueError(
-                "LORCANA_STORAGE_BACKEND must be either 'memory' or 'sqlite'."
-            )
+            raise ValueError("LORCANA_STORAGE_BACKEND must be either 'memory' or 'sqlite'.")

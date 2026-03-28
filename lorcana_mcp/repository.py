@@ -12,7 +12,6 @@ from typing import Any
 from pysqlscribe.aggregate_functions import count
 from pysqlscribe.scalar_functions import lower
 from pysqlscribe.table import Table as SqliteTable
-
 from pysqlscribe.utils.ddl_loader import load_tables_from_ddls
 
 DDL_PATH = Path(__file__).resolve().parent.parent / "ddl" / "create_card_table.sql"
@@ -309,8 +308,23 @@ class SQLiteCardRepository(CardRepository):
         paged = max(0, offset)
         sort_field = sort_by if sort_by in self._SORTABLE_FIELDS else "id"
         clauses = self._build_filter_clauses(
-            name, color, cost, min_cost, max_cost, trait, rarity, inkwell, set_code,
-            min_attack, max_attack, min_defence, max_defence, body_text, lore, min_lore, max_lore,
+            name,
+            color,
+            cost,
+            min_cost,
+            max_cost,
+            trait,
+            rarity,
+            inkwell,
+            set_code,
+            min_attack,
+            max_attack,
+            min_defence,
+            max_defence,
+            body_text,
+            lore,
+            min_lore,
+            max_lore,
             card_type,
         )
         query = self.card_table.select("*")
@@ -373,8 +387,23 @@ class SQLiteCardRepository(CardRepository):
         card_type: str | None = None,
     ) -> int:
         clauses = self._build_filter_clauses(
-            name, color, cost, min_cost, max_cost, trait, rarity, inkwell, set_code,
-            min_attack, max_attack, min_defence, max_defence, body_text, lore, min_lore, max_lore,
+            name,
+            color,
+            cost,
+            min_cost,
+            max_cost,
+            trait,
+            rarity,
+            inkwell,
+            set_code,
+            min_attack,
+            max_attack,
+            min_defence,
+            max_defence,
+            body_text,
+            lore,
+            min_lore,
+            max_lore,
             card_type,
         )
         query = self.card_table.select(count(self.card_table.id).as_("count"))

@@ -30,11 +30,7 @@ def create_server() -> FastMCP:
     api_client = LorcanaApiClient(config)
 
     repository = SQLiteCardRepository(config.db_path)
-    loaded_from_cache = (
-        not config.refresh_on_startup
-        and config.skip_if_db_exists
-        and repository.has_cards()
-    )
+    loaded_from_cache = not config.refresh_on_startup and config.skip_if_db_exists and repository.has_cards()
 
     if not loaded_from_cache:
         cards = api_client.fetch_cards()
