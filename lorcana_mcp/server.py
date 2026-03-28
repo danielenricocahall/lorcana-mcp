@@ -32,13 +32,13 @@ def create_server() -> FastMCP:
     api_client = LorcanaApiClient(config)
 
     repository = _build_repository(config)
-    loaded_from_cache = not config.refresh_on_startup and config.skip_if_db_exists and repository.has_cards()
+    loaded_from_cache = not config.refresh_on_startup and config.skip_if_db_exists and repository.has_cards
 
     if not loaded_from_cache:
         cards = api_client.fetch_cards()
         loaded_count = repository.load_cards(cards)
     else:
-        loaded_count = repository.total_cards()
+        loaded_count = repository.total_cards
 
     startup_mode = "cached" if loaded_from_cache else "fetched"
     mcp = FastMCP(

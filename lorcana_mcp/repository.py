@@ -73,13 +73,14 @@ class CardRepository(ABC):
     def load_cards(self, cards: list[dict[str, Any]]) -> int:
         raise NotImplementedError
 
-    @abstractmethod
-    def has_cards(self) -> bool:
-        raise NotImplementedError
-
+    @property
     @abstractmethod
     def total_cards(self) -> int:
         raise NotImplementedError
+
+    @property
+    def has_cards(self) -> bool:
+        return self.total_cards > 0
 
     @abstractmethod
     def search(
@@ -189,9 +190,7 @@ class InMemoryCardRepository(CardRepository):
             self._cache_path.write_text(json.dumps(self._cards, ensure_ascii=False), encoding="utf-8")
         return len(self._cards)
 
-    def has_cards(self) -> bool:
-        return len(self._cards) > 0
-
+    @property
     def total_cards(self) -> int:
         return len(self._cards)
 
@@ -443,11 +442,7 @@ class SQLiteCardRepository(CardRepository):
         self._card_cache = None
         return len(normalized)
 
-    def has_cards(self) -> bool:
-        query = self.card_table.select(count(self.card_table.id).as_("count"))
-        rows = self._run_query(query.build())
-        return int(rows[0].get("count", 0)) > 0 if rows else False
-
+    @property
     def total_cards(self) -> int:
         query = self.card_table.select(count(self.card_table.id).as_("count"))
         rows = self._run_query(query.build())

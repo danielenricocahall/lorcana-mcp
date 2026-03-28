@@ -92,8 +92,8 @@ SAMPLE_CARDS = [
 
 
 def test_repository_load_and_query(repo):
-    assert repo.has_cards() is True
-    assert repo.total_cards() == 4
+    assert repo.has_cards is True
+    assert repo.total_cards == 4
 
     search_results = repo.search(name="elsa")
     assert len(search_results) == 1
@@ -170,6 +170,6 @@ def test_in_memory_cache_persistence(tmp_path: Path):
     assert cache.exists()
 
     repo2 = InMemoryCardRepository(cache_path=cache)
-    assert repo2.has_cards() is True
-    assert repo2.total_cards() == 4
+    assert repo2.has_cards is True
+    assert repo2.total_cards == 4
     assert repo2.get_by_id(1)["name"] == "Mickey Mouse"
