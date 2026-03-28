@@ -259,7 +259,8 @@ class InMemoryCardRepository(CardRepository):
             results = [c for c in results if card_type.lower() in (c.get("type") or "").lower()]
         return results
 
-    def _sort(self, cards: list[dict[str, Any]], field: str, reverse: bool) -> list[dict[str, Any]]:
+    @staticmethod
+    def _sort(cards: list[dict[str, Any]], field: str, reverse: bool) -> list[dict[str, Any]]:
         none_cards = [c for c in cards if c.get(field) is None]
         value_cards = [c for c in cards if c.get(field) is not None]
         value_cards.sort(key=lambda c: c[field], reverse=reverse)
