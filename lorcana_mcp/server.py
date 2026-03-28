@@ -29,24 +29,20 @@ def create_server() -> FastMCP:
 
     api_client = LorcanaApiClient(config)
 
-    loaded_from_cache = False
-    fetch_on_startup = True
+    repository = SQLiteCardRepository(config.db_path)
+    loaded_from_cache = (
+        not config.refresh_on_startup
+        and config.skip_if_db_exists
+        and repository.has_cards()
+    )
 
-    repository = SQLiteCardRepository(config.db_path, initial_load=fetch_on_startup)
-    if config.refresh_on_startup:
-        fetch_on_startup = True
-    elif config.skip_if_db_exists and repository.has_cards():
-        fetch_on_startup = False
-        loaded_from_cache = True
-
-
-    if fetch_on_startup:
+    if not loaded_from_cache:
         cards = api_client.fetch_cards()
         loaded_count = repository.load_cards(cards)
     else:
         loaded_count = repository.total_cards()
 
-    startup_mode = "fetched" if fetch_on_startup else "cached"
+    startup_mode = "cached" if loaded_from_cache else "fetched"
     mcp = FastMCP(
         name="lorcana-mcp",
         instructions=(
@@ -183,33 +179,41 @@ def create_server() -> FastMCP:
             card_type=card_type,
         )
 
+    _AGGREGABLE_FIELDS = {"cost", "rarity", "color", "set_code", "type"}
+
     @mcp.tool(
         description=(
-            "Return counts grouped by a field (e.g., cost, rarity, colors, card_set_id)."
+            "Return card counts grouped by a field. "
+            "Valid fields: cost (ink curve), rarity, color, set_code, type. "
+            "Examples: aggregate_cards('cost') for the ink curve, aggregate_cards('color') for color breakdown, "
+            "aggregate_cards('rarity') for rarity breakdown, aggregate_cards('set_code') for set distribution."
         )
     )
-    def aggregate_cards(field: str) -> dict[str, int]:
+    def aggregate_cards(field: str) -> dict[str, int] | str:
+        if field not in _AGGREGABLE_FIELDS:
+            return f"Invalid field '{field}'. Valid fields: {', '.join(sorted(_AGGREGABLE_FIELDS))}."
         return repository.count_by(field)
-
-    @mcp.tool(description="Return card counts by ink cost.")
-    def ink_curve_stats() -> dict[str, int]:
-        return repository.count_by("cost")
 
     @mcp.tool(description="Return most common traits.")
     def top_traits(limit: int = 10) -> dict[str, int]:
         return repository.top_traits(limit=limit)
 
-    @mcp.tool(description="Return card count per color (ruby, sapphire, emerald, amber, amethyst, steel).")
-    def color_distribution() -> dict[str, int]:
-        return repository.color_distribution()
-
-    @mcp.tool(description="Return card distribution by rarity.")
-    def rarity_breakdown() -> dict[str, int]:
-        return repository.count_by("rarity")
-
-    @mcp.tool(description="Return card distribution by set code.")
-    def set_distribution() -> dict[str, int]:
-        return repository.count_by("set_code")
+    @mcp.tool(
+        description=(
+            "Resolve an informal, partial, or misspelled card name to the closest matching cards. "
+            "Returns full card data (stats, abilities, cost, etc.) for each candidate — no follow-up query needed. "
+            "Use this as follows:\n"
+            "- 'Tell me about / get stats for X' → call resolve_card only, use the result directly.\n"
+            "- 'Find cards that synergize with / work well with X' → resolve_card to get X's traits and "
+            "abilities, then use those as inputs to search_cards.\n"
+            "- 'Build a deck with X' → resolve_card to identify X, then search_cards for supporting cards.\n"
+            "Never call search_cards or get_card_by_id first when the user has named a specific card — "
+            "resolve_card avoids failed searches and retry loops. "
+            "Example: 'Maui Half Shark' resolves to 'Maui - Half-Shark' as the top result."
+        )
+    )
+    def resolve_card(query: str, limit: int = 5) -> list[dict[str, Any]]:
+        return repository.resolve_card(query, limit=limit)
 
     @mcp.tool(description="Show startup metadata for this server instance.")
     def server_status() -> dict[str, Any]:
@@ -248,7 +252,7 @@ def create_server() -> FastMCP:
 
 ## Steps
 
-1. **Explore the card pool** — use `search_cards` filtered to the requested color(s) and card_type. Valid card types: glimmer (characters), action, item, song, location.
+1. **Explore the card pool** — use `search_cards` filtered to the requested color(s) and card_type. Valid card types: Character, Action, Item, Song, Location.
 2. **Build the curve** — target this distribution across 60 cards:
    - Cost 1–2: 10–14 cards (early plays and ink fodder)
    - Cost 3–4: 16–20 cards (midgame)
@@ -256,9 +260,9 @@ def create_server() -> FastMCP:
    - Cost 7+: 6–10 cards (finishers, use sparingly)
 3. **Find synergies** — use `top_traits` to identify strong trait clusters. Look for Singer/Song pairs (body_text="Singer"), Shift chains, or keyword combos (Evasive, Bodyguard, Challenger).
 4. **Adjust for playstyle**:
-   - aggressive: favor low-cost glimmers with Rush or high attack, minimize cost 6+
+   - aggressive: favor low-cost Characters with Rush or high attack, minimize cost 6+
    - control: include removal (body_text="banish" or "damage"), Ward, and card draw
-   - lore-race: prioritize high lore values (min_lore=2), Evasive glimmers, and Songs that quest
+   - lore-race: prioritize high lore values (min_lore=2), Evasive Characters, and Songs that quest
    - balanced: even curve, mix of threats and support
 
 ## Output Format
@@ -268,7 +272,7 @@ Present the final deck as:
 ```
 ## [Deck Name] ([Color1] / [Color2])
 
-### Glimmers (N)
+### Characters (N)
 - 4x Card Name (Cost) [Traits] — one-line note on role
 
 ### Actions (N)

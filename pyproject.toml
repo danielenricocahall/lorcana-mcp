@@ -1,6 +1,6 @@
 [project]
 name = "lorcana-mcp"
-version = "1.1.1"
+version = "1.2.0"
 description = "MCP server for searching, exploring, and aggregating Disney Lorcana cards."
 readme = "README.md"
 requires-python = ">=3.13"
@@ -8,7 +8,6 @@ dependencies = [
     "fastapi>=0.135.1",
     "fastmcp>=3.1.0",
     "pysqlscribe>=0.11.0",
-    "pytest>=9.0.2",
     "requests>=2.32.5",
 ]
 license-files = ["LICENSE"]

@@ -33,7 +33,7 @@ def _normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
         "image_thumbnail": images.get("thumbnail"),
         "story": raw.get("story"),
         "subtypes": raw.get("subtypesText"),
-        "abilities": raw.get("fullText"),
+        "abilities": raw.get("abilities"),
         "full_identifier": raw.get("fullIdentifier"),
     }
 
