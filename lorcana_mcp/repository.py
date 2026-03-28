@@ -126,6 +126,7 @@ class CardRepository(ABC):
     def color_distribution(self) -> dict[str, int]:
         raise NotImplementedError
 
+    @property
     @abstractmethod
     def _all_cards(self) -> list[dict[str, Any]]:
         raise NotImplementedError
@@ -134,7 +135,7 @@ class CardRepository(ABC):
         query_lower = query.lower().strip()
         tokens = [t for t in re.split(r"[\s\-]+", re.sub(r"[^\w\s\-]", " ", query_lower)) if t]
         scored = []
-        for card in self._all_cards():
+        for card in self._all_cards:
             full = (card.get("full_name") or "").lower()
             name = (card.get("name") or "").lower()
             token_hits = sum(1 for t in tokens if t in full or t in name)
@@ -386,6 +387,7 @@ class InMemoryCardRepository(CardRepository):
                 counter[color.lower()] += 1
         return dict(counter.most_common())
 
+    @property
     def _all_cards(self) -> list[dict[str, Any]]:
         return self._cards
 
@@ -574,6 +576,7 @@ class SQLiteCardRepository(CardRepository):
         rows = self._run_query(query.build())
         return _deserialize_card(rows[0]) if rows else None
 
+    @property
     def _all_cards(self) -> list[dict[str, Any]]:
         if self._card_cache is None:
             self._card_cache = [_deserialize_card(c) for c in self._run_query(self.card_table.select("*").build())]
