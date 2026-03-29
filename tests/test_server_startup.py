@@ -18,12 +18,10 @@ class FakeConfig:
 
 class FakeRepo:
     def __init__(self, has_cards_value: bool):
-        self._has_cards = has_cards_value
+        self.has_cards = has_cards_value
         self.loaded_cards = 0
 
-    def has_cards(self) -> bool:
-        return self._has_cards
-
+    @property
     def total_cards(self) -> int:
         return 42
 

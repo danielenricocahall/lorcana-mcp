@@ -15,8 +15,9 @@ def _env_bool(name: str, default: bool) -> bool:
 @dataclass(frozen=True)
 class LorcanaConfig:
     api_url: str = os.getenv("LORCANA_API", "https://lorcanajson.org/files/current/en/allCards.json")
-    storage_backend: str = os.getenv("LORCANA_STORAGE_BACKEND", "sqlite").strip().lower()
+    storage_backend: str = os.getenv("LORCANA_STORAGE_BACKEND", "memory").strip().lower()
     db_path: Path = Path(os.getenv("LORCANA_DB_PATH", "cards.db"))
+    cache_path: Path = Path(os.getenv("LORCANA_CACHE_PATH", "cards.json"))
     request_timeout_seconds: float = float(os.getenv("LORCANA_HTTP_TIMEOUT_SECONDS", "60"))
     refresh_on_startup: bool = _env_bool("LORCANA_REFRESH_ON_STARTUP", False)
     skip_if_db_exists: bool = _env_bool("LORCANA_SKIP_IF_DB_EXISTS", True)

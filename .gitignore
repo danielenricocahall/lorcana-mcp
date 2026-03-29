@@ -1,4 +1,6 @@
 .idea
 *.db
+cards.json
 **/__pycache__
 scripts
+.mcpregistry_*
