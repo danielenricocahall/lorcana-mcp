@@ -19,6 +19,30 @@ DDL_PATH = Path(__file__).resolve().parent.parent / "ddl" / "create_card_table.s
 
 _JSON_COLUMNS = {"abilities"}
 
+_SEARCH_FIELDS = frozenset(
+    {
+        "id",
+        "name",
+        "version",
+        "full_name",
+        "cost",
+        "inkwell",
+        "strength",
+        "willpower",
+        "color",
+        "type",
+        "full_text",
+        "lore",
+        "rarity",
+        "set_code",
+        "subtypes",
+    }
+)
+
+
+def _slim_card(card: dict[str, Any]) -> dict[str, Any]:
+    return {k: v for k, v in card.items() if k in _SEARCH_FIELDS}
+
 
 def _to_scalar(value: Any) -> Any:
     if isinstance(value, (list, dict)):
@@ -316,7 +340,7 @@ class InMemoryCardRepository(CardRepository):
             card_type=card_type,
         )
         results = self._sort(results, sort_field, reverse=sort_order.lower() == "desc")
-        return results[paged : paged + limited]
+        return [_slim_card(c) for c in results[paged : paged + limited]]
 
     def get_by_id(self, card_id: int) -> dict[str, Any] | None:
         return next((c for c in self._cards if c.get("id") == card_id), None)
@@ -565,7 +589,7 @@ class SQLiteCardRepository(CardRepository):
         sort_column = getattr(self.card_table, sort_field)
         ordered = sort_column.desc() if sort_order.lower() == "desc" else sort_column.asc()
         query = query.order_by(ordered).limit(limited).offset(paged)
-        return [_deserialize_card(c) for c in self._run_query(query.build())]
+        return [_slim_card(_deserialize_card(c)) for c in self._run_query(query.build())]
 
     def get_by_id(self, card_id: int) -> dict[str, Any] | None:
         query = self.card_table.select("*").where(self.card_table.id == card_id).limit(1)
