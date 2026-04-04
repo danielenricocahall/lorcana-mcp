@@ -25,14 +25,14 @@ Cards are bulk inserted into `lorcana_cards` using `executemany`.
 The server is published to [GHCR](https://github.com/danielenricocahall/lorcana-mcp/pkgs/container/lorcana-mcp) and the [MCP Registry](https://registry.modelcontextprotocol.io/?q=lorcana). Pull and run it directly:
 
 ```bash
-docker pull ghcr.io/danielenricocahall/lorcana-mcp:1.0.0
+docker pull ghcr.io/danielenricocahall/lorcana-mcp:latest
 
 docker run --rm -i \
   -e LORCANA_STORAGE_BACKEND=sqlite \
   -e LORCANA_DB_PATH=/data/cards.db \
   -e LORCANA_SKIP_IF_DB_EXISTS=true \
   -v lorcana_mcp_data:/data \
-  ghcr.io/danielenricocahall/lorcana-mcp:1.0.0
+  ghcr.io/danielenricocahall/lorcana-mcp:latest
 ```
 
 ## Run locally (stdio MCP)
@@ -112,7 +112,7 @@ Notes:
         "LORCANA_SKIP_IF_DB_EXISTS=true",
         "-v",
         "lorcana_mcp_data:/data",
-        "ghcr.io/danielenricocahall/lorcana-mcp:1.0.0"
+        "ghcr.io/danielenricocahall/lorcana-mcp:latest"
       ]
     }
   }
@@ -163,7 +163,7 @@ claude mcp add --scope user \
   -e LORCANA_DB_PATH=/data/cards.db \
   -e LORCANA_SKIP_IF_DB_EXISTS=true \
   -- lorcana docker run --rm -i -v lorcana_mcp_data:/data \
-  ghcr.io/danielenricocahall/lorcana-mcp:1.0.0
+  ghcr.io/danielenricocahall/lorcana-mcp:latest
 ```
 
 ### Via the Claude CLI — locally built
