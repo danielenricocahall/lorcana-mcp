@@ -8,10 +8,7 @@ from fastmcp import FastMCP
 
 from lorcana_mcp.client import LorcanaApiClient
 from lorcana_mcp.config import LorcanaConfig
-from lorcana_mcp.repository import (
-    InMemoryCardRepository,
-    SQLiteCardRepository,
-)
+from lorcana_mcp.repository import InMemoryCardRepository
 from lorcana_mcp.rules import LORCANA_RULES
 
 
@@ -20,15 +17,12 @@ def _get_version() -> str:
     return tomllib.loads(pyproject.read_text())["project"]["version"]
 
 
-def _build_repository(config: LorcanaConfig) -> InMemoryCardRepository | SQLiteCardRepository:
-    if config.storage_backend == "sqlite":
-        return SQLiteCardRepository(config.db_path)
+def _build_repository(config: LorcanaConfig) -> InMemoryCardRepository:
     return InMemoryCardRepository(config.cache_path)
 
 
 def create_server() -> FastMCP:
     config = LorcanaConfig()
-    config.validate()
 
     api_client = LorcanaApiClient(config)
 
@@ -46,7 +40,7 @@ def create_server() -> FastMCP:
         name="lorcana-mcp",
         instructions=(
             "Use this server to search and aggregate Disney Lorcana cards. "
-            f"Loaded {loaded_count} cards on startup using backend={config.storage_backend} "
+            f"Loaded {loaded_count} cards on startup "
             f"(mode={startup_mode}). "
             "Valid color names: ruby, sapphire, emerald, amber, amethyst, steel. "
             "To count cards matching a filter (e.g. 'how many ruby cards?'), use count_cards. "
@@ -219,9 +213,8 @@ def create_server() -> FastMCP:
     def server_status() -> dict[str, Any]:
         return {
             "api_url": config.api_url,
-            "storage_backend": config.storage_backend,
             "loaded_cards": loaded_count,
-            "db_path": str(config.db_path),
+            "cache_path": str(config.cache_path),
             "refresh_on_startup": config.refresh_on_startup,
             "skip_if_db_exists": config.skip_if_db_exists,
             "loaded_from_cache": loaded_from_cache,
