@@ -54,6 +54,7 @@ First player to reach 20 lore wins.
 - You can only challenge exerted characters (unless an ability says otherwise).
 - Both characters deal simultaneous damage equal to their Strength.
 - Damage >= Willpower = banished (sent to discard pile).
+- Damage from abilities (e.g., "deal 2 damage to chosen character") also causes banishing at damage >= Willpower.
 - Damage persists between turns and is not removed during the Ready Step.
 
 ### Card Types
@@ -78,7 +79,7 @@ First player to reach 20 lore wins.
 
 **Bodyguard** - Enters play exerted. Opponents must challenge this character before other non-Bodyguard
 characters you control. (Opponents are not forced to challenge, but if they do, they must target
-a Bodyguard if one is exerted.)
+a Bodyguard if one is exerted.) If multiple Bodyguards are exerted, the opponent chooses which to challenge.
 
 **Challenger +N** - Gets +N Strength when initiating a challenge (not when defending).
 
@@ -91,12 +92,15 @@ a Bodyguard if one is exerted.)
 **Rush** - Can challenge on the turn it is played (bypasses summoning sickness for challenging only, not questing).
 
 **Shift N** - Play on top of an existing character with the same name, paying N ink instead of full cost.
-The shifted character inherits position (ready/exerted) and damage. If the base character was already
-in play from a prior turn, the shifted character is NOT subject to summoning sickness.
+Name matching uses the base name only — any "Elsa" can shift onto any other "Elsa" regardless of
+subtitle/version. The shifted character inherits position (ready/exerted) and damage. If the base
+character was already in play from a prior turn, the shifted character is NOT subject to summoning
+sickness. Floodborn characters are the ones that typically have Shift.
 
 **Singer N** - Can exert to sing (play for free) songs costing N ink or less, regardless of the character's
-own ink cost. The character must be ready and not have summoning sickness. Note: any character with
-cost >= a song's cost can also sing it, even without the Singer keyword.
+own ink cost. The character must be ready and not have summoning sickness to sing. Note: any character
+with cost >= a song's cost can also sing it even without the Singer keyword, but the same restrictions
+apply — the character must be ready and not have summoning sickness.
 
 **Support** - When questing, may add this character's Strength to another chosen character until your next turn.
 
@@ -111,4 +115,12 @@ AoE effects ("all characters") still affect Ward characters.
 The face-down card is not in play and cannot be looked at. Cards placed underneath typically enable
 the character's secondary ability (e.g., stat buffs while boosted, triggered effects on quest/challenge,
 or effects that fire when a card is placed underneath). Boost costs vary (1, 2, or 3 ink).
+
+### Additional Rules
+
+- **Deck out:** If your deck is empty, you do not lose. You simply cannot draw. The game continues
+  until a player reaches 20 lore.
+- **Classification traits:** Characters have classification traits (Storyborn, Dreamborn, Floodborn)
+  that may be referenced by card abilities. Floodborn characters are typically the ones with the Shift
+  keyword. These traits also appear in subtypes alongside character traits (Hero, Villain, Princess, etc.).
 """.strip()
