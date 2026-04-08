@@ -12,6 +12,7 @@ from lorcana_mcp.repository import (
     InMemoryCardRepository,
     SQLiteCardRepository,
 )
+from lorcana_mcp.rules import LORCANA_RULES
 
 
 def _get_version() -> str:
@@ -50,7 +51,8 @@ def create_server() -> FastMCP:
             "Valid color names: ruby, sapphire, emerald, amber, amethyst, steel. "
             "To count cards matching a filter (e.g. 'how many ruby cards?'), use count_cards. "
             "To get a breakdown of all cards by color, use color_distribution. "
-            "To retrieve card details or browse cards, use search_cards."
+            "To retrieve card details or browse cards, use search_cards.\n\n"
+            f"{LORCANA_RULES}"
         ),
         version=_get_version(),
     )
