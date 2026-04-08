@@ -24,7 +24,7 @@ First player to reach 20 lore wins.
 
 **Beginning Phase (in order):**
 1. Ready Step - un-exert all your cards.
-2. Set Step - resolve "at the start of your turn" triggers.
+2. Set Step - resolve "at the start of your turn" triggers. Locations passively gain lore here.
 3. Draw Step - draw 1 card (first player skips this on turn 1).
 
 **Main Phase (any order, as many actions as able):**
@@ -63,9 +63,12 @@ First player to reach 20 lore wins.
 **Song** - Subtype of Action. Can be played normally OR sung for free by an eligible character (see Singer).
 **Item** - Stays in play. Can have passive or activated abilities. No summoning sickness. Cannot quest/challenge.
 **Location** - Stays in play. Has Willpower, Lore, and a Move Cost.
-  - Exert a location to quest for its lore value (no summoning sickness).
+  - Locations have NO ready/exerted state — they are always played horizontally and stay that way.
+  - Locations passively gain lore equal to their lore value during the Set Step of your Beginning Phase
+    (no exertion needed). Some locations have 0 lore and provide other benefits instead.
   - Pay a location's move cost to move a character there. A character can be at one location at a time.
-  - Opponents challenge exerted locations; the attacker deals Strength damage but the location deals none back.
+  - Opponents can challenge a location at any time (since locations are never "ready" to protect them).
+    The attacker deals Strength damage but the location deals none back.
   - Location banished at damage >= Willpower; characters there remain in play but lose location bonuses.
 
 ### Keywords
