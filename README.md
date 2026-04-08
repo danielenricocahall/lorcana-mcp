@@ -6,19 +6,16 @@ An MCP server for searching and aggregating Disney Lorcana cards.
 ## Startup behavior
 On startup, the server fetches all cards from [lorcanajson.org](https://lorcanajson.org) via a GET request to `https://lorcanajson.org/files/current/en/allCards.json`.
 
-The server stores cards in sqlite by default (`LORCANA_STORAGE_BACKEND=sqlite`).
+Cards are kept in-memory as a Python list for fast filtering. With ~2,700 cards this is lightweight and requires no external database. A local JSON file cache (`LORCANA_CACHE_PATH`, default `cards.json`) lets the server skip the API fetch on subsequent startups.
 
 Startup data loading is controlled by:
 
 - `LORCANA_REFRESH_ON_STARTUP`:
   - `true`: always fetch from API and repopulate storage
-  - `false`: may use existing sqlite cache
+  - `false`: use existing cache if available
 - `LORCANA_SKIP_IF_DB_EXISTS`:
-  - only used when backend is sqlite and refresh is false
-  - `true`: skip API fetch if sqlite DB already contains cards
-  - `false`: fetch and repopulate sqlite
-
-Cards are bulk inserted into `lorcana_cards` using `executemany`.
+  - `true` (default): skip API fetch if the cache file already contains cards
+  - `false`: fetch and repopulate
 
 ## Quick start (no clone required)
 
@@ -27,9 +24,14 @@ The server is published to [GHCR](https://github.com/danielenricocahall/lorcana-
 ```bash
 docker pull ghcr.io/danielenricocahall/lorcana-mcp:latest
 
+docker run --rm -i ghcr.io/danielenricocahall/lorcana-mcp:latest
+```
+
+To persist the card cache across container restarts, mount a volume:
+
+```bash
 docker run --rm -i \
-  -e LORCANA_STORAGE_BACKEND=sqlite \
-  -e LORCANA_DB_PATH=/data/cards.db \
+  -e LORCANA_CACHE_PATH=/data/cards.json \
   -e LORCANA_SKIP_IF_DB_EXISTS=true \
   -v lorcana_mcp_data:/data \
   ghcr.io/danielenricocahall/lorcana-mcp:latest
@@ -48,11 +50,7 @@ docker build -t lorcana-mcp:latest .
 
 ### Run as stdio MCP server
 ```bash
-docker run --rm -i \
-  -e LORCANA_STORAGE_BACKEND=sqlite \
-  -e LORCANA_DB_PATH=/data/cards.db \
-  -v lorcana_mcp_data:/data \
-  lorcana-mcp:latest
+docker run --rm -i lorcana-mcp:latest
 ```
 
 ## Docker Compose
@@ -64,13 +62,12 @@ docker compose run --rm -T lorcana-mcp
 
 Notes:
 - No port is exposed; MCP communication is over stdio.
-- Use a volume (as above) to persist sqlite cache across restarts.
+- Use a volume to persist the JSON cache across restarts.
 
 ## Config
 - `LORCANA_API` (default: `https://lorcanajson.org/files/current/en/allCards.json`)
-- `LORCANA_STORAGE_BACKEND` (`sqlite` default, or `memory`)
-- `LORCANA_DB_PATH` (default: `cards.db`)
-- `LORCANA_HTTP_TIMEOUT_SECONDS` (default: `30`)
+- `LORCANA_CACHE_PATH` (default: `cards.json`) — local file for caching fetched cards
+- `LORCANA_HTTP_TIMEOUT_SECONDS` (default: `60`)
 - `LORCANA_REFRESH_ON_STARTUP` (`false` default)
 - `LORCANA_SKIP_IF_DB_EXISTS` (`true` default)
 
@@ -83,12 +80,7 @@ Notes:
   "mcpServers": {
     "lorcana": {
       "command": "uv",
-      "args": ["run", "python", "/absolute/path/to/lorcana-mcp/main.py"],
-      "env": {
-        "LORCANA_STORAGE_BACKEND": "sqlite",
-        "LORCANA_DB_PATH": "/absolute/path/to/lorcana-mcp/cards.db",
-        "LORCANA_SKIP_IF_DB_EXISTS": "true"
-      }
+      "args": ["run", "python", "/absolute/path/to/lorcana-mcp/main.py"]
     }
   }
 }
@@ -104,14 +96,6 @@ Notes:
         "run",
         "--rm",
         "-i",
-        "-e",
-        "LORCANA_STORAGE_BACKEND=sqlite",
-        "-e",
-        "LORCANA_DB_PATH=/data/cards.db",
-        "-e",
-        "LORCANA_SKIP_IF_DB_EXISTS=true",
-        "-v",
-        "lorcana_mcp_data:/data",
         "ghcr.io/danielenricocahall/lorcana-mcp:latest"
       ]
     }
@@ -129,14 +113,6 @@ Notes:
         "run",
         "--rm",
         "-i",
-        "-e",
-        "LORCANA_STORAGE_BACKEND=sqlite",
-        "-e",
-        "LORCANA_DB_PATH=/data/cards.db",
-        "-e",
-        "LORCANA_SKIP_IF_DB_EXISTS=true",
-        "-v",
-        "lorcana_mcp_data:/data",
         "lorcana-mcp:latest"
       ]
     }
@@ -159,20 +135,14 @@ Notes:
 ### Via the Claude CLI — published image (global, no clone required)
 ```shell
 claude mcp add --scope user \
-  -e LORCANA_STORAGE_BACKEND=sqlite \
-  -e LORCANA_DB_PATH=/data/cards.db \
-  -e LORCANA_SKIP_IF_DB_EXISTS=true \
-  -- lorcana docker run --rm -i -v lorcana_mcp_data:/data \
+  -- lorcana docker run --rm -i \
   ghcr.io/danielenricocahall/lorcana-mcp:latest
 ```
 
 ### Via the Claude CLI — locally built
 ```shell
 claude mcp add --scope user \
-  -e LORCANA_STORAGE_BACKEND=sqlite \
-  -e LORCANA_DB_PATH=/data/cards.db \
-  -e LORCANA_SKIP_IF_DB_EXISTS=true \
-  -- lorcana docker run --rm -i -v lorcana_mcp_data:/data lorcana-mcp:latest
+  -- lorcana docker run --rm -i lorcana-mcp:latest
 ```
 
 ## Example questions
@@ -221,4 +191,4 @@ Once connected to an MCP client, you can ask natural language questions like:
 - `color_distribution` — card count per color
 - `rarity_breakdown` — card count per rarity
 - `set_distribution` — card count per set
-- `server_status` — startup metadata (backend, card count, config)
+- `server_status` — startup metadata (card count, config)

@@ -7,13 +7,9 @@ from lorcana_mcp import server
 class FakeConfig:
     def __init__(self, refresh_on_startup: bool, skip_if_db_exists: bool):
         self.api_url = "https://example.test"
-        self.storage_backend = "sqlite"
-        self.db_path = "unused.db"
+        self.cache_path = "unused.json"
         self.refresh_on_startup = refresh_on_startup
         self.skip_if_db_exists = skip_if_db_exists
-
-    def validate(self) -> None:
-        return None
 
 
 class FakeRepo:
@@ -59,12 +55,12 @@ def _extract_json_content(result):
     return json.loads(text)
 
 
-def test_server_uses_cached_sqlite_when_allowed(monkeypatch):
+def test_server_uses_cache_when_allowed(monkeypatch):
     repo = FakeRepo(has_cards_value=True)
     api = FakeApiClient(None)
 
     monkeypatch.setattr(server, "LorcanaConfig", lambda: FakeConfig(False, True))
-    monkeypatch.setattr(server, "SQLiteCardRepository", lambda *args, **kwargs: repo)
+    monkeypatch.setattr(server, "InMemoryCardRepository", lambda *args, **kwargs: repo)
     monkeypatch.setattr(server, "LorcanaApiClient", lambda _cfg: api)
 
     mcp = server.create_server()
@@ -81,7 +77,7 @@ def test_server_refresh_forces_fetch(monkeypatch):
     api = FakeApiClient(None)
 
     monkeypatch.setattr(server, "LorcanaConfig", lambda: FakeConfig(True, True))
-    monkeypatch.setattr(server, "SQLiteCardRepository", lambda *args, **kwargs: repo)
+    monkeypatch.setattr(server, "InMemoryCardRepository", lambda *args, **kwargs: repo)
     monkeypatch.setattr(server, "LorcanaApiClient", lambda _cfg: api)
 
     mcp = server.create_server()

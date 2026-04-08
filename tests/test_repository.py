@@ -2,15 +2,12 @@ from pathlib import Path
 
 import pytest
 
-from lorcana_mcp.repository import InMemoryCardRepository, SQLiteCardRepository
+from lorcana_mcp.repository import InMemoryCardRepository
 
 
-@pytest.fixture(params=["sqlite", "memory"])
-def repo(request, tmp_path):
-    if request.param == "sqlite":
-        r = SQLiteCardRepository(tmp_path / "cards.db")
-    else:
-        r = InMemoryCardRepository()
+@pytest.fixture
+def repo():
+    r = InMemoryCardRepository()
     r.load_cards(SAMPLE_CARDS)
     return r
 
