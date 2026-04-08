@@ -61,7 +61,10 @@ First player to reach 20 lore wins.
 **Character** - Has Strength, Willpower, and Lore. Can quest and challenge. Subject to summoning sickness.
 **Action** - One-time effect, then discarded.
 **Song** - Subtype of Action. Can be played normally OR sung for free by an eligible character (see Singer).
-**Item** - Stays in play. Can have passive or activated abilities. No summoning sickness. Cannot quest/challenge.
+**Item** - Stays in play. No summoning sickness. Cannot quest or challenge, and cannot be challenged.
+  Items can have passive abilities or activated abilities that require exerting the item (e.g., "Exert
+  this item to give a character +1 lore this turn"). Exerting an item does NOT make it vulnerable to
+  challenges — only characters and locations can be challenged. Exerted items ready during your Ready Step.
 **Location** - Stays in play. Has Willpower, Lore, and a Move Cost.
   - Locations have NO ready/exerted state — they are always played horizontally and stay that way.
   - Locations passively gain lore equal to their lore value during the Set Step of your Beginning Phase
@@ -103,4 +106,9 @@ cost >= a song's cost can also sing it, even without the Singer keyword.
 AoE effects ("all characters") still affect Ward characters.
 
 **Vanish** - When banished in a challenge, returns to hand instead of going to discard.
+
+**Boost N** - Once per turn, pay N ink to put the top card of your deck face-down under this character.
+The face-down card is not in play and cannot be looked at. Cards placed underneath typically enable
+the character's secondary ability (e.g., stat buffs while boosted, triggered effects on quest/challenge,
+or effects that fire when a card is placed underneath). Boost costs vary (1, 2, or 3 ink).
 """.strip()
