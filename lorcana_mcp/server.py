@@ -238,31 +238,41 @@ def create_server() -> FastMCP:
         colors: str,
         playstyle: str = "balanced",
     ) -> str:
-        return f"""You are helping build a legal Disney Lorcana deck. Use the lorcana-mcp tools to search and select cards.
+        return f"""You are helping build a legal Disney Lorcana deck. Use the lorcana-mcp tools to search \
+and select cards. Refer to the Lorcana game rules in the server instructions for all game mechanics, \
+keywords, and deck-building constraints.
 
 ## Parameters
 - Colors: {colors}
 - Playstyle: {playstyle}
 
-## Deck Rules
-- Exactly 60 cards total
-- Maximum 2 ink colors
-- Maximum 4 copies of any single card (by name)
+## Deck-Building Guidelines
 - Aim for ~20 inkable cards to ensure consistent ink development each turn
+- When including dual-ink cards, ensure the deck uses both of that card's colors
+- Include Shift chains where possible: pick cheap base-name characters and their Floodborn Shift versions
+- Characters with Bodyguard enter play exerted — factor that into tempo planning
+- Remember summoning sickness: freshly played characters cannot quest or challenge (except Rush for challenges)
 
 ## Steps
 
-1. **Explore the card pool** — use `search_cards` filtered to the requested color(s) and card_type. Valid card types: Character, Action, Item, Song, Location.
+1. **Explore the card pool** — use `search_cards` filtered to the requested color(s) and card_type. \
+Valid card types: Character, Action, Item, Song, Location.
 2. **Build the curve** — target this distribution across 60 cards:
-   - Cost 1–2: 10–14 cards (early plays and ink fodder)
-   - Cost 3–4: 16–20 cards (midgame)
-   - Cost 5–6: 10–14 cards (late threats)
-   - Cost 7+: 6–10 cards (finishers, use sparingly)
-3. **Find synergies** — use `top_traits` to identify strong trait clusters. Look for Singer/Song pairs (body_text="Singer"), Shift chains, or keyword combos (Evasive, Bodyguard, Challenger).
+   - Cost 1-2: 10-14 cards (early plays and ink fodder)
+   - Cost 3-4: 16-20 cards (midgame)
+   - Cost 5-6: 10-14 cards (late threats)
+   - Cost 7+: 6-10 cards (finishers, use sparingly)
+3. **Find synergies** — use `top_traits` to identify strong trait clusters. Look for:
+   - Singer/Song pairs: characters with Singer can sing songs for free (body_text="Singer")
+   - Shift chains: cheap base characters + their Floodborn Shift versions for tempo advantage
+   - Keyword combos: Evasive (hard to remove), Bodyguard (protects key characters), Challenger (efficient removal)
+   - Location value: locations with lore passively generate lore each turn without needing to exert
+   - Items with activated abilities: exert-based items for repeatable effects each turn
 4. **Adjust for playstyle**:
    - aggressive: favor low-cost Characters with Rush or high attack, minimize cost 6+
    - control: include removal (body_text="banish" or "damage"), Ward, and card draw
-   - lore-race: prioritize high lore values (min_lore=2), Evasive Characters, and Songs that quest
+   - lore-race: prioritize high lore values (min_lore=2), Evasive Characters, Locations with lore, \
+and Songs that quest
    - balanced: even curve, mix of threats and support
 
 ## Output Format
@@ -287,9 +297,9 @@ Present the final deck as:
 ### Locations (N)
 - Nx Card Name (Cost)
 
-Total: 60 cards
+Total: 60 cards | Inkable: N cards
 ```
 
-Then add a short paragraph covering: win condition, 2–3 key synergies, and inkable balance."""
+Then add a short paragraph covering: win condition, 2-3 key synergies, and inkable balance."""
 
     return mcp
