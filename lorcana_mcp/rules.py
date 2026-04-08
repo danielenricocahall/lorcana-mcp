@@ -43,7 +43,8 @@ First player to reach 20 lore wins.
 - Characters CANNOT quest, challenge, or use exert-based abilities on the turn they are played.
 - Rush is the only exception: Rush characters can challenge (but not quest) on the turn they are played.
 - Shift bypasses summoning sickness if the character underneath was already in play from a previous turn.
-- Items and Locations are NOT subject to summoning sickness.
+- Items are NOT subject to summoning sickness — they can be used immediately.
+- Locations are NOT subject to summoning sickness — they passively gain lore starting on your next Set Step.
 
 ### Questing
 - Exert a ready character to gain lore equal to its lore value.
@@ -64,8 +65,8 @@ First player to reach 20 lore wins.
 **Song** - Subtype of Action. Can be played normally OR sung for free by an eligible character (see Singer).
 **Item** - Stays in play. No summoning sickness. Cannot quest or challenge, and cannot be challenged.
   Items can have passive abilities or activated abilities that require exerting the item (e.g., "Exert
-  this item to give a character +1 lore this turn"). Exerting an item does NOT make it vulnerable to
-  challenges — only characters and locations can be challenged. Exerted items ready during your Ready Step.
+  this item to give a character +1 lore this turn"). Items cannot be challenged at all — exerting an
+  item has no downside beyond the item being unavailable until your next Ready Step.
 **Location** - Stays in play. Has Willpower, Lore, and a Move Cost.
   - Locations have NO ready/exerted state — they are always played horizontally and stay that way.
   - Locations passively gain lore equal to their lore value during the Set Step of your Beginning Phase
