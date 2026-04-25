@@ -1,7 +1,7 @@
 """Compare JSON vs TOON encoding cost for representative search_cards responses.
 
 Run from the project root:
-    uv run python scripts/bench_toon.py
+    uv run python benchmarks/bench_toon.py
 
 Tokenizer is tiktoken's cl100k_base if installed, used as a proxy for Claude's
 tokenizer; falls back to a chars/4 estimate otherwise. Numbers are directional
@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 from lorcana_mcp.repository import InMemoryCardRepository
+from lorcana_mcp.toon import to_toon
 
 try:
     import tiktoken
@@ -31,34 +32,6 @@ except ImportError:
         return len(s) // 4
 
     TOKENIZER = "chars/4 estimate (install tiktoken for real counts)"
-
-
-def _toon_value(v: Any) -> str:
-    if v is None:
-        return ""
-    if isinstance(v, bool):
-        return "true" if v else "false"
-    if isinstance(v, (int, float)):
-        return str(v)
-    s = str(v)
-    if "," in s or "\n" in s or s.startswith('"'):
-        return '"' + s.replace('"', '""') + '"'
-    return s
-
-
-def to_toon(rows: list[dict[str, Any]], name: str = "cards") -> str:
-    if not rows:
-        return f"{name}[0]{{}}:\n"
-    cols: list[str] = []
-    seen: set[str] = set()
-    for row in rows:
-        for k in row.keys():
-            if k not in seen:
-                seen.add(k)
-                cols.append(k)
-    header = f"{name}[{len(rows)}]{{{','.join(cols)}}}:"
-    body = [",".join(_toon_value(row.get(c)) for c in cols) for row in rows]
-    return header + "\n" + "\n".join(body) + "\n"
 
 
 CACHE = Path("cards.json")

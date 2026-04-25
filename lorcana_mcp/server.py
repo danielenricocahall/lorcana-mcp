@@ -10,6 +10,7 @@ from lorcana_mcp.client import LorcanaApiClient
 from lorcana_mcp.config import LorcanaConfig
 from lorcana_mcp.repository import InMemoryCardRepository
 from lorcana_mcp.rules import LORCANA_RULES
+from lorcana_mcp.toon import to_toon
 
 
 def _get_version() -> str:
@@ -64,7 +65,9 @@ def create_server() -> FastMCP:
             "use sort_order='asc' or 'desc'. "
             "Use set_code to filter by set number (e.g. '1' for The First Chapter). "
             "Use offset to paginate through results (e.g. offset=20 for the next page). "
-            "Use count_cards instead if you only need a total count."
+            "Use count_cards instead if you only need a total count. "
+            "Set response_format='toon' to receive a tabular TOON-encoded string instead of "
+            "JSON objects (~50% fewer tokens for large result sets); default is 'json'."
         )
     )
     def search_cards(
@@ -90,8 +93,9 @@ def create_server() -> FastMCP:
         offset: int = 0,
         sort_by: str = "id",
         sort_order: str = "asc",
-    ) -> list[dict[str, Any]]:
-        return repository.search(
+        response_format: str = "json",
+    ) -> list[dict[str, Any]] | str:
+        rows = repository.search(
             name=name,
             color=color,
             cost=cost,
@@ -115,6 +119,9 @@ def create_server() -> FastMCP:
             sort_by=sort_by,
             sort_order=sort_order,
         )
+        if response_format == "toon":
+            return to_toon(rows, name="cards")
+        return rows
 
     @mcp.tool(description="Get a single Lorcana card by id.")
     def get_card_by_id(card_id: int) -> dict[str, Any] | None:
