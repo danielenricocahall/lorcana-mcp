@@ -9,6 +9,7 @@ from fastmcp import FastMCP
 
 from lorcana_mcp.client import LorcanaApiClient
 from lorcana_mcp.config import LorcanaConfig
+from lorcana_mcp.deck import MalformedLine, ParsedLine, dump_deck, parse_lines
 from lorcana_mcp.repository import InMemoryCardRepository
 from lorcana_mcp.rules import LORCANA_RULES
 
@@ -215,6 +216,46 @@ def create_server() -> FastMCP:
     )
     def resolve_card(query: str, limit: int = 5) -> list[dict[str, Any]]:
         return repository.resolve_card(query, limit=limit)
+
+    @mcp.tool(
+        description=(
+            "Render a Lorcana deck as a Dreamborn/Pixelborn-compatible text deck list "
+            "(`<count> <full_name>` per line, no sections, no set codes). "
+            "Each entry is `{name: str, count: int}` where `name` is the card's `full_name` "
+            "from search_cards (e.g. 'Mickey Mouse - Brave Little Tailor'). "
+            "Returns plain text suitable for pasting into Dreamborn, Pixelborn, untap.in, "
+            "or a Limitless tournament submission."
+        )
+    )
+    def export_deck(deck: list[dict[str, Any]]) -> str:
+        return dump_deck(deck)
+
+    @mcp.tool(
+        description=(
+            "Parse a Dreamborn/Pixelborn-style deck list (`<count> <full_name>` per line) "
+            "into resolved card objects. Each line is matched to a card by exact full_name "
+            "first; lines that don't match exactly are returned in `unresolved` with the top "
+            "fuzzy candidates so the user can disambiguate. "
+            "Returns `{parsed: [{count, card}], unresolved: [{raw, candidates}]}`. "
+            "Blank lines, comments (`#`, `//`), totals (`Total: 60`), and bracketed section "
+            "headers are silently skipped."
+        )
+    )
+    def import_deck(text: str) -> dict[str, Any]:
+        parsed: list[dict[str, Any]] = []
+        unresolved: list[dict[str, Any]] = []
+        for line in parse_lines(text):
+            if isinstance(line, MalformedLine):
+                unresolved.append({"raw": line.raw, "candidates": []})
+                continue
+            assert isinstance(line, ParsedLine)
+            card = repository.find_by_full_name(line.name)
+            if card is not None:
+                parsed.append({"count": line.count, "card": card})
+                continue
+            candidates = repository.resolve_card(line.name, limit=3)
+            unresolved.append({"raw": line.raw, "candidates": candidates})
+        return {"parsed": parsed, "unresolved": unresolved}
 
     @mcp.tool(description="Show startup metadata for this server instance.")
     def server_status() -> dict[str, Any]:

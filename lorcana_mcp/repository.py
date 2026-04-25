@@ -110,6 +110,10 @@ class CardRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
+    def find_by_full_name(self, full_name: str) -> dict[str, Any] | None:
+        raise NotImplementedError
+
+    @abstractmethod
     def count_by(self, field: str) -> dict[str, int]:
         raise NotImplementedError
 
@@ -175,14 +179,22 @@ class InMemoryCardRepository(CardRepository):
     def __init__(self, cache_path: Path | None = None) -> None:
         self._cache_path = cache_path
         self._cards: list[dict[str, Any]] = []
+        self._by_full_name_lc: dict[str, dict[str, Any]] = {}
         if cache_path and cache_path.exists():
-            self._cards = json.loads(cache_path.read_text(encoding="utf-8"))
+            self._set_cards(json.loads(cache_path.read_text(encoding="utf-8")))
+
+    def _set_cards(self, cards: list[dict[str, Any]]) -> None:
+        self._cards = list(cards)
+        self._by_full_name_lc = {(c.get("full_name") or "").lower(): c for c in self._cards if c.get("full_name")}
 
     def load_cards(self, cards: list[dict[str, Any]]) -> int:
-        self._cards = list(cards)
+        self._set_cards(cards)
         if self._cache_path:
             self._cache_path.write_text(json.dumps(self._cards, ensure_ascii=False), encoding="utf-8")
         return len(self._cards)
+
+    def find_by_full_name(self, full_name: str) -> dict[str, Any] | None:
+        return self._by_full_name_lc.get(full_name.strip().lower())
 
     @property
     def total_cards(self) -> int:

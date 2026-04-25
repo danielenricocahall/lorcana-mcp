@@ -185,6 +185,8 @@ Once connected to an MCP client, you can ask natural language questions like:
 - `search_cards` — filter and retrieve card objects (supports `response_format="toon"` for ~50% fewer tokens)
 - `count_cards` — count cards matching a filter without returning full objects
 - `aggregate_cards` — count cards grouped by any field
+- `export_deck` — render a deck as a Dreamborn/Pixelborn-compatible text deck list
+- `import_deck` — parse a Dreamborn/Pixelborn-style deck list, returning resolved cards plus any unresolved lines with fuzzy candidates
 - `ink_curve_stats` — card counts by ink cost
 - `top_traits` — most common traits across all cards
 - `color_distribution` — card count per color
