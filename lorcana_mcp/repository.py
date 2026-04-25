@@ -5,8 +5,9 @@ import json
 import re
 from abc import ABC, abstractmethod
 from collections import Counter
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, NamedTuple
 
 _JSON_COLUMNS = {"abilities"}
 
@@ -61,6 +62,31 @@ def _parse_listish(value: Any) -> list[str]:
     return [part.strip() for part in re.split(r"[,|•]", text) if part.strip()]
 
 
+class _SearchRow(NamedTuple):
+    name_lc: str
+    color_lc: str
+    type_lc: str
+    rarity_lc: str
+    subtypes_lc: str
+    full_text_lc: str
+    set_code_str: str
+
+
+def _make_row(card: dict[str, Any]) -> _SearchRow:
+    return _SearchRow(
+        name_lc=(card.get("name") or "").lower(),
+        color_lc=(card.get("color") or "").lower(),
+        type_lc=(card.get("type") or "").lower(),
+        rarity_lc=(card.get("rarity") or "").lower(),
+        subtypes_lc=(card.get("subtypes") or "").lower(),
+        full_text_lc=(card.get("full_text") or "").lower(),
+        set_code_str=str(card.get("set_code") or ""),
+    )
+
+
+_Predicate = Callable[[dict[str, Any], _SearchRow], bool]
+
+
 class CardRepository(ABC):
     @abstractmethod
     def load_cards(self, cards: list[dict[str, Any]]) -> int:
@@ -102,10 +128,6 @@ class CardRepository(ABC):
         sort_by: str = "id",
         sort_order: str = "asc",
     ) -> list[dict[str, Any]]:
-        raise NotImplementedError
-
-    @abstractmethod
-    def get_by_id(self, card_id: int) -> dict[str, Any] | None:
         raise NotImplementedError
 
     @abstractmethod
@@ -174,11 +196,16 @@ class InMemoryCardRepository(CardRepository):
     def __init__(self, cache_path: Path | None = None) -> None:
         self._cache_path = cache_path
         self._cards: list[dict[str, Any]] = []
+        self._rows: list[_SearchRow] = []
         if cache_path and cache_path.exists():
-            self._cards = json.loads(cache_path.read_text(encoding="utf-8"))
+            self._set_cards(json.loads(cache_path.read_text(encoding="utf-8")))
+
+    def _set_cards(self, cards: list[dict[str, Any]]) -> None:
+        self._cards = list(cards)
+        self._rows = [_make_row(c) for c in self._cards]
 
     def load_cards(self, cards: list[dict[str, Any]]) -> int:
-        self._cards = list(cards)
+        self._set_cards(cards)
         if self._cache_path:
             self._cache_path.write_text(json.dumps(self._cards, ensure_ascii=False), encoding="utf-8")
         return len(self._cards)
@@ -190,8 +217,7 @@ class InMemoryCardRepository(CardRepository):
     _SORTABLE_FIELDS = {"id", "name", "cost", "strength", "willpower", "lore", "rarity", "set_code"}
 
     @staticmethod
-    def _filter(
-        cards: list[dict[str, Any]],
+    def _build_predicates(
         *,
         name: str | None,
         color: str | None,
@@ -211,45 +237,53 @@ class InMemoryCardRepository(CardRepository):
         min_lore: int | None,
         max_lore: int | None,
         card_type: str | None,
-    ) -> list[dict[str, Any]]:
-        results = cards
+    ) -> list[_Predicate]:
+        checks: list[_Predicate] = []
         if name:
-            results = [c for c in results if name.lower() in (c.get("name") or "").lower()]
+            checks.append(lambda c, r, v=name.lower(): v in r.name_lc)
         if color:
-            results = [c for c in results if color.lower() == (c.get("color") or "").lower()]
+            checks.append(lambda c, r, v=color.lower(): r.color_lc == v)
         if cost is not None:
-            results = [c for c in results if c.get("cost") == int(cost)]
+            checks.append(lambda c, r, v=int(cost): c.get("cost") == v)
         if min_cost is not None:
-            results = [c for c in results if (c.get("cost") or 0) >= int(min_cost)]
+            checks.append(lambda c, r, v=int(min_cost): (c.get("cost") or 0) >= v)
         if max_cost is not None:
-            results = [c for c in results if (c.get("cost") or 0) <= int(max_cost)]
+            checks.append(lambda c, r, v=int(max_cost): (c.get("cost") or 0) <= v)
         if trait:
-            results = [c for c in results if trait.lower() in (c.get("subtypes") or "").lower()]
+            checks.append(lambda c, r, v=trait.lower(): v in r.subtypes_lc)
         if rarity:
-            results = [c for c in results if rarity.lower() == (c.get("rarity") or "").lower()]
+            checks.append(lambda c, r, v=rarity.lower(): r.rarity_lc == v)
         if inkwell is not None:
-            results = [c for c in results if bool(c.get("inkwell")) == inkwell]
+            checks.append(lambda c, r, v=bool(inkwell): bool(c.get("inkwell")) == v)
         if set_code is not None:
-            results = [c for c in results if str(c.get("set_code") or "") == str(set_code)]
+            checks.append(lambda c, r, v=str(set_code): r.set_code_str == v)
         if min_attack is not None:
-            results = [c for c in results if c.get("strength") is not None and c["strength"] >= int(min_attack)]
+            checks.append(lambda c, r, v=int(min_attack): c.get("strength") is not None and c["strength"] >= v)
         if max_attack is not None:
-            results = [c for c in results if c.get("strength") is not None and c["strength"] <= int(max_attack)]
+            checks.append(lambda c, r, v=int(max_attack): c.get("strength") is not None and c["strength"] <= v)
         if min_defence is not None:
-            results = [c for c in results if c.get("willpower") is not None and c["willpower"] >= int(min_defence)]
+            checks.append(lambda c, r, v=int(min_defence): c.get("willpower") is not None and c["willpower"] >= v)
         if max_defence is not None:
-            results = [c for c in results if c.get("willpower") is not None and c["willpower"] <= int(max_defence)]
+            checks.append(lambda c, r, v=int(max_defence): c.get("willpower") is not None and c["willpower"] <= v)
         if body_text:
-            results = [c for c in results if body_text.lower() in (c.get("full_text") or "").lower()]
+            checks.append(lambda c, r, v=body_text.lower(): v in r.full_text_lc)
         if lore is not None:
-            results = [c for c in results if c.get("lore") == int(lore)]
+            checks.append(lambda c, r, v=int(lore): c.get("lore") == v)
         if min_lore is not None:
-            results = [c for c in results if c.get("lore") is not None and c["lore"] >= int(min_lore)]
+            checks.append(lambda c, r, v=int(min_lore): c.get("lore") is not None and c["lore"] >= v)
         if max_lore is not None:
-            results = [c for c in results if c.get("lore") is not None and c["lore"] <= int(max_lore)]
+            checks.append(lambda c, r, v=int(max_lore): c.get("lore") is not None and c["lore"] <= v)
         if card_type:
-            results = [c for c in results if card_type.lower() in (c.get("type") or "").lower()]
-        return results
+            checks.append(lambda c, r, v=card_type.lower(): v in r.type_lc)
+        return checks
+
+    def _iter_matching(self, checks: list[_Predicate]):
+        if not checks:
+            yield from self._cards
+            return
+        for card, row in zip(self._cards, self._rows):
+            if all(check(card, row) for check in checks):
+                yield card
 
     @staticmethod
     def _sort(cards: list[dict[str, Any]], field: str, reverse: bool) -> list[dict[str, Any]]:
@@ -287,8 +321,7 @@ class InMemoryCardRepository(CardRepository):
         limited = max(1, min(limit, 200))
         paged = max(0, offset)
         sort_field = sort_by if sort_by in self._SORTABLE_FIELDS else "id"
-        results = self._filter(
-            self._cards,
+        checks = self._build_predicates(
             name=name,
             color=color,
             cost=cost,
@@ -308,11 +341,9 @@ class InMemoryCardRepository(CardRepository):
             max_lore=max_lore,
             card_type=card_type,
         )
+        results = list(self._iter_matching(checks))
         results = self._sort(results, sort_field, reverse=sort_order.lower() == "desc")
         return [_slim_card(c) for c in results[paged : paged + limited]]
-
-    def get_by_id(self, card_id: int) -> dict[str, Any] | None:
-        return next((c for c in self._cards if c.get("id") == card_id), None)
 
     def count(
         self,
@@ -336,29 +367,29 @@ class InMemoryCardRepository(CardRepository):
         max_lore: int | None = None,
         card_type: str | None = None,
     ) -> int:
-        return len(
-            self._filter(
-                self._cards,
-                name=name,
-                color=color,
-                cost=cost,
-                min_cost=min_cost,
-                max_cost=max_cost,
-                trait=trait,
-                rarity=rarity,
-                inkwell=inkwell,
-                set_code=set_code,
-                min_attack=min_attack,
-                max_attack=max_attack,
-                min_defence=min_defence,
-                max_defence=max_defence,
-                body_text=body_text,
-                lore=lore,
-                min_lore=min_lore,
-                max_lore=max_lore,
-                card_type=card_type,
-            )
+        checks = self._build_predicates(
+            name=name,
+            color=color,
+            cost=cost,
+            min_cost=min_cost,
+            max_cost=max_cost,
+            trait=trait,
+            rarity=rarity,
+            inkwell=inkwell,
+            set_code=set_code,
+            min_attack=min_attack,
+            max_attack=max_attack,
+            min_defence=min_defence,
+            max_defence=max_defence,
+            body_text=body_text,
+            lore=lore,
+            min_lore=min_lore,
+            max_lore=max_lore,
+            card_type=card_type,
         )
+        if not checks:
+            return len(self._cards)
+        return sum(1 for _ in self._iter_matching(checks))
 
     def count_by(self, field: str) -> dict[str, int]:
         counter: Counter = Counter(str(c.get(field) or "") for c in self._cards)

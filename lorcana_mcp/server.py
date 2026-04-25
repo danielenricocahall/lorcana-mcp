@@ -116,10 +116,6 @@ def create_server() -> FastMCP:
             sort_order=sort_order,
         )
 
-    @mcp.tool(description="Get a single Lorcana card by id.")
-    def get_card_by_id(card_id: int) -> dict[str, Any] | None:
-        return repository.get_by_id(card_id)
-
     @mcp.tool(
         description=(
             "Count cards matching the given filters. Use this for questions like "
@@ -201,7 +197,7 @@ def create_server() -> FastMCP:
             "- 'Find cards that synergize with / work well with X' → resolve_card to get X's traits and "
             "abilities, then use those as inputs to search_cards.\n"
             "- 'Build a deck with X' → resolve_card to identify X, then search_cards for supporting cards.\n"
-            "Never call search_cards or get_card_by_id first when the user has named a specific card — "
+            "Never call search_cards first when the user has named a specific card — "
             "resolve_card avoids failed searches and retry loops. "
             "Example: 'Maui Half Shark' resolves to 'Maui - Half-Shark' as the top result."
         )
