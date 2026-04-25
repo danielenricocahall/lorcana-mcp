@@ -184,7 +184,6 @@ Once connected to an MCP client, you can ask natural language questions like:
 ## MCP tools
 - `search_cards` — filter and retrieve card objects (supports `response_format="toon"` for ~50% fewer tokens)
 - `count_cards` — count cards matching a filter without returning full objects
-- `get_card_by_id` — fetch a single card by its ID
 - `aggregate_cards` — count cards grouped by any field
 - `ink_curve_stats` — card counts by ink cost
 - `top_traits` — most common traits across all cards

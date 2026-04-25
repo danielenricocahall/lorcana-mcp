@@ -107,10 +107,6 @@ class CardRepository(ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def get_by_id(self, card_id: int) -> dict[str, Any] | None:
-        raise NotImplementedError
-
-    @abstractmethod
     def count_by(self, field: str) -> dict[str, int]:
         raise NotImplementedError
 
@@ -315,9 +311,6 @@ class InMemoryCardRepository(CardRepository):
         results = list(results)
         results = self._sort(results, sort_field, reverse=sort_order.lower() == "desc")
         return [_slim_card(c) for c in results[paged : paged + limited]]
-
-    def get_by_id(self, card_id: int) -> dict[str, Any] | None:
-        return next((c for c in self._cards if c.get("id") == card_id), None)
 
     def count(
         self,

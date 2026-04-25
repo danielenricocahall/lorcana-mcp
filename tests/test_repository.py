@@ -96,10 +96,6 @@ def test_repository_load_and_query(repo):
     assert len(search_results) == 1
     assert search_results[0]["id"] == 2
 
-    by_id = repo.get_by_id(1)
-    assert by_id is not None
-    assert by_id["name"] == "Mickey Mouse"
-
 
 def test_repository_aggregations(repo):
     rarity_counts = repo.count_by("rarity")
@@ -169,4 +165,6 @@ def test_in_memory_cache_persistence(tmp_path: Path):
     repo2 = InMemoryCardRepository(cache_path=cache)
     assert repo2.has_cards is True
     assert repo2.total_cards == 4
-    assert repo2.get_by_id(1)["name"] == "Mickey Mouse"
+    mickey = repo2.search(name="mickey")
+    assert len(mickey) == 1
+    assert mickey[0]["name"] == "Mickey Mouse"
