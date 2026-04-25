@@ -4,13 +4,13 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
+import toons
 from fastmcp import FastMCP
 
 from lorcana_mcp.client import LorcanaApiClient
 from lorcana_mcp.config import LorcanaConfig
 from lorcana_mcp.repository import InMemoryCardRepository
 from lorcana_mcp.rules import LORCANA_RULES
-from lorcana_mcp.toon import to_toon
 
 
 def _get_version() -> str:
@@ -120,7 +120,7 @@ def create_server() -> FastMCP:
             sort_order=sort_order,
         )
         if response_format == "toon":
-            return to_toon(rows, name="cards")
+            return toons.dumps({"cards": rows})
         return rows
 
     @mcp.tool(description="Get a single Lorcana card by id.")

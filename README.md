@@ -198,14 +198,14 @@ Once connected to an MCP client, you can ask natural language questions like:
 `search_cards` accepts a `response_format` argument:
 
 - `"json"` (default) — list of card objects, unchanged from prior versions.
-- `"toon"` — a tabular [TOON](https://toonformat.org/) string with one column header line and one row per card. Missing/null fields render as empty cells, so heterogeneous queries (e.g. mixed Characters and Actions) compress especially well.
+- `"toon"` — a [TOON](https://toonformat.org/) string with one column header line and one row per card, encoded by the [`toons`](https://github.com/alesanfra/toons) Rust-backed library (the official community reference implementation).
 
 Example (`search_cards(name="elsa", limit=2, response_format="toon")`):
 
 ```
 cards[2]{id,name,version,full_name,cost,inkwell,...}:
-1,Elsa,Spirit of Winter,Elsa - Spirit of Winter,5,false,...
-2,Elsa,Snow Queen,Elsa - Snow Queen,8,true,...
+  1,Elsa,Spirit of Winter,Elsa - Spirit of Winter,5,false,...
+  2,Elsa,Snow Queen,Elsa - Snow Queen,8,true,...
 ```
 
 ### Benchmark
@@ -214,11 +214,11 @@ Measured with `benchmarks/bench_toon.py` against the live ~2,710-card dataset, t
 
 | query | rows | JSON tokens | TOON tokens | Δ |
 |---|---:|---:|---:|---:|
-| `color="amber", limit=200` | 200 | 27,974 | 14,011 | **−49.9%** |
-| `color="ruby", limit=50` | 50 | 6,348 | 2,930 | **−53.8%** |
-| `card_type="action", limit=50` (sparse cols) | 50 | 5,938 | 2,414 | **−59.3%** |
-| `body_text="when", limit=50` (long full_text) | 50 | 7,253 | 3,813 | **−47.4%** |
-| `name="elsa", limit=20` | 20 | 2,910 | 1,531 | **−47.4%** |
-| **total** |  | **50,423** | **24,699** | **−51.0%** |
+| `color="amber", limit=200` | 200 | 27,974 | 14,843 | **−46.9%** |
+| `color="ruby", limit=50` | 50 | 6,348 | 3,113 | **−51.0%** |
+| `card_type="action", limit=50` (sparse cols) | 50 | 5,938 | 2,770 | **−53.4%** |
+| `body_text="when", limit=50` (long full_text) | 50 | 7,253 | 3,979 | **−45.1%** |
+| `name="elsa", limit=20` | 20 | 2,910 | 1,596 | **−45.2%** |
+| **total** |  | **50,423** | **26,301** | **−47.8%** |
 
 Reproduce with `uv run python benchmarks/bench_toon.py` (requires a populated `cards.json` cache).

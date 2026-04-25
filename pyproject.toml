@@ -8,6 +8,7 @@ dependencies = [
     "fastapi>=0.135.1",
     "fastmcp>=3.1.0",
     "requests>=2.32.5",
+    "toons>=0.5,<0.6",
 ]
 license-files = ["LICENSE"]
 

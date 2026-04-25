@@ -14,8 +14,9 @@ import json
 from pathlib import Path
 from typing import Any
 
+import toons
+
 from lorcana_mcp.repository import InMemoryCardRepository
-from lorcana_mcp.toon import to_toon
 
 try:
     import tiktoken
@@ -76,7 +77,7 @@ def main() -> None:
     for label, kwargs in QUERIES:
         results = repo.search(**kwargs)
         json_str = json.dumps(results, ensure_ascii=False)
-        toon_str = to_toon(results)
+        toon_str = toons.dumps({"cards": results})
 
         jb = len(json_str.encode("utf-8"))
         tb = len(toon_str.encode("utf-8"))
