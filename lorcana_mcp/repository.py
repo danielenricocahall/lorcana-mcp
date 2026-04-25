@@ -5,6 +5,7 @@ import json
 import re
 from abc import ABC, abstractmethod
 from collections import Counter
+from functools import reduce
 from pathlib import Path
 from typing import Any
 
@@ -212,44 +213,46 @@ class InMemoryCardRepository(CardRepository):
         max_lore: int | None,
         card_type: str | None,
     ) -> list[dict[str, Any]]:
-        results = cards
+        filter_clauses = []
         if name:
-            results = [c for c in results if name.lower() in (c.get("name") or "").lower()]
+            filter_clauses.append(lambda c: name.lower() in (c.get("name") or ""))
         if color:
-            results = [c for c in results if color.lower() == (c.get("color") or "").lower()]
+            filter_clauses.append(lambda c: color.lower() == (c.get("color") or ""))
         if cost is not None:
-            results = [c for c in results if c.get("cost") == int(cost)]
+            filter_clauses.append(lambda c: c.get("cost") == int(cost))
         if min_cost is not None:
-            results = [c for c in results if (c.get("cost") or 0) >= int(min_cost)]
+            filter_clauses.append(lambda c: (c.get("cost") or 0) >= int(min_cost))
         if max_cost is not None:
-            results = [c for c in results if (c.get("cost") or 0) <= int(max_cost)]
+            filter_clauses.append(lambda c: (c.get("cost") or 0) <= int(max_cost))
         if trait:
-            results = [c for c in results if trait.lower() in (c.get("subtypes") or "").lower()]
+            filter_clauses.append(lambda c: trait.lower() in (c.get("subtypes") or "").lower())
         if rarity:
-            results = [c for c in results if rarity.lower() == (c.get("rarity") or "").lower()]
+            filter_clauses.append(lambda c: rarity.lower() == (c.get("rarity") or "").lower())
         if inkwell is not None:
-            results = [c for c in results if bool(c.get("inkwell")) == inkwell]
+            filter_clauses.append(lambda c: bool(c.get("inkwell")) == inkwell)
         if set_code is not None:
-            results = [c for c in results if str(c.get("set_code") or "") == str(set_code)]
+            filter_clauses.append(lambda c: str(c.get("set_code") or "") == str(set_code))
         if min_attack is not None:
-            results = [c for c in results if c.get("strength") is not None and c["strength"] >= int(min_attack)]
+            filter_clauses.append(lambda c: c.get("strength") is not None and c["strength"] >= int(min_attack))
         if max_attack is not None:
-            results = [c for c in results if c.get("strength") is not None and c["strength"] <= int(max_attack)]
+            filter_clauses.append(lambda c: c.get("strength") is not None and c["strength"] <= int(max_attack))
         if min_defence is not None:
-            results = [c for c in results if c.get("willpower") is not None and c["willpower"] >= int(min_defence)]
+            filter_clauses.append(lambda c: c.get("willpower") is not None and c["willpower"] >= int(min_defence))
         if max_defence is not None:
-            results = [c for c in results if c.get("willpower") is not None and c["willpower"] <= int(max_defence)]
+            filter_clauses.append(lambda c: c.get("willpower") is not None and c["willpower"] <= int(max_defence))
         if body_text:
-            results = [c for c in results if body_text.lower() in (c.get("full_text") or "").lower()]
+            filter_clauses.append(lambda c: body_text.lower() in (c.get("full_text") or "").lower())
         if lore is not None:
-            results = [c for c in results if c.get("lore") == int(lore)]
+            filter_clauses.append(lambda c: c.get("lore") == int(lore))
         if min_lore is not None:
-            results = [c for c in results if c.get("lore") is not None and c["lore"] >= int(min_lore)]
+            filter_clauses.append(lambda c: c.get("lore") is not None and c["lore"] >= int(min_lore))
         if max_lore is not None:
-            results = [c for c in results if c.get("lore") is not None and c["lore"] <= int(max_lore)]
+            filter_clauses.append(lambda c: c.get("lore") is not None and c["lore"] <= int(max_lore))
         if card_type:
-            results = [c for c in results if card_type.lower() in (c.get("type") or "").lower()]
-        return results
+            filter_clauses.append(lambda c: card_type.lower() in (c.get("type") or "").lower())
+        results = reduce(lambda items, f: filter(f, items), filter_clauses, cards)
+
+        return list(results)
 
     @staticmethod
     def _sort(cards: list[dict[str, Any]], field: str, reverse: bool) -> list[dict[str, Any]]:
