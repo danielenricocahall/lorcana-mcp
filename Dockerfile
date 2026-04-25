@@ -1,5 +1,4 @@
 FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim
-RUN uv python install 3.14t
 
 LABEL io.modelcontextprotocol.server.name="io.github.danielenricocahall/lorcana-mcp"
 
