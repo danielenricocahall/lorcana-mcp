@@ -61,28 +61,6 @@ def _parse_listish(value: Any) -> list[str]:
     return [part.strip() for part in re.split(r"[,|•]", text) if part.strip()]
 
 
-class _SearchRow(NamedTuple):
-    name_lc: str
-    color_lc: str
-    type_lc: str
-    rarity_lc: str
-    subtypes_lc: str
-    full_text_lc: str
-    set_code_str: str
-
-
-def _make_row(card: dict[str, Any]) -> _SearchRow:
-    return _SearchRow(
-        name_lc=(card.get("name") or "").lower(),
-        color_lc=(card.get("color") or "").lower(),
-        type_lc=(card.get("type") or "").lower(),
-        rarity_lc=(card.get("rarity") or "").lower(),
-        subtypes_lc=(card.get("subtypes") or "").lower(),
-        full_text_lc=(card.get("full_text") or "").lower(),
-        set_code_str=str(card.get("set_code") or ""),
-    )
-
-
 class _Filters(NamedTuple):
     name_lc: str | None
     color_lc: str | None
@@ -150,10 +128,10 @@ def _make_filters(
     )
 
 
-def _matches(card: dict[str, Any], row: _SearchRow, f: _Filters) -> bool:
-    if f.name_lc is not None and f.name_lc not in row.name_lc:
+def _matches(card: dict[str, Any], f: _Filters) -> bool:
+    if f.name_lc is not None and f.name_lc not in (card.get("name") or "").lower():
         return False
-    if f.color_lc is not None and row.color_lc != f.color_lc:
+    if f.color_lc is not None and (card.get("color") or "").lower() != f.color_lc:
         return False
     if f.cost is not None and card.get("cost") != f.cost:
         return False
@@ -161,13 +139,13 @@ def _matches(card: dict[str, Any], row: _SearchRow, f: _Filters) -> bool:
         return False
     if f.max_cost is not None and (card.get("cost") or 0) > f.max_cost:
         return False
-    if f.trait_lc is not None and f.trait_lc not in row.subtypes_lc:
+    if f.trait_lc is not None and f.trait_lc not in (card.get("subtypes") or "").lower():
         return False
-    if f.rarity_lc is not None and row.rarity_lc != f.rarity_lc:
+    if f.rarity_lc is not None and (card.get("rarity") or "").lower() != f.rarity_lc:
         return False
     if f.inkwell is not None and bool(card.get("inkwell")) != f.inkwell:
         return False
-    if f.set_code_str is not None and row.set_code_str != f.set_code_str:
+    if f.set_code_str is not None and str(card.get("set_code") or "") != f.set_code_str:
         return False
     if f.min_attack is not None:
         strength = card.get("strength")
@@ -185,7 +163,7 @@ def _matches(card: dict[str, Any], row: _SearchRow, f: _Filters) -> bool:
         willpower = card.get("willpower")
         if willpower is None or willpower > f.max_defence:
             return False
-    if f.body_text_lc is not None and f.body_text_lc not in row.full_text_lc:
+    if f.body_text_lc is not None and f.body_text_lc not in (card.get("full_text") or "").lower():
         return False
     if f.lore is not None and card.get("lore") != f.lore:
         return False
@@ -197,7 +175,7 @@ def _matches(card: dict[str, Any], row: _SearchRow, f: _Filters) -> bool:
         lore = card.get("lore")
         if lore is None or lore > f.max_lore:
             return False
-    if f.card_type_lc is not None and f.card_type_lc not in row.type_lc:
+    if f.card_type_lc is not None and f.card_type_lc not in (card.get("type") or "").lower():
         return False
     return True
 
@@ -311,16 +289,11 @@ class InMemoryCardRepository(CardRepository):
     def __init__(self, cache_path: Path | None = None) -> None:
         self._cache_path = cache_path
         self._cards: list[dict[str, Any]] = []
-        self._rows: list[_SearchRow] = []
         if cache_path and cache_path.exists():
-            self._set_cards(json.loads(cache_path.read_text(encoding="utf-8")))
-
-    def _set_cards(self, cards: list[dict[str, Any]]) -> None:
-        self._cards = list(cards)
-        self._rows = [_make_row(c) for c in self._cards]
+            self._cards = json.loads(cache_path.read_text(encoding="utf-8"))
 
     def load_cards(self, cards: list[dict[str, Any]]) -> int:
-        self._set_cards(cards)
+        self._cards = list(cards)
         if self._cache_path:
             self._cache_path.write_text(json.dumps(self._cards, ensure_ascii=False), encoding="utf-8")
         return len(self._cards)
@@ -335,8 +308,8 @@ class InMemoryCardRepository(CardRepository):
         if filters == _NO_FILTERS:
             yield from self._cards
             return
-        for card, row in zip(self._cards, self._rows):
-            if _matches(card, row, filters):
+        for card in self._cards:
+            if _matches(card, filters):
                 yield card
 
     @staticmethod
