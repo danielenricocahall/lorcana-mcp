@@ -29,6 +29,9 @@ _SEARCH_FIELDS = frozenset(
         "rarity",
         "set_code",
         "subtypes",
+        "tcgplayer_url",
+        "cardmarket_url",
+        "cardtrader_url",
     }
 )
 

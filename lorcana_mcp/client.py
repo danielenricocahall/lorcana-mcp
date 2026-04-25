@@ -10,6 +10,7 @@ from lorcana_mcp.config import LorcanaConfig
 def _normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
     """Map lorcanajson.org fields to our internal schema column names."""
     images = raw.get("images") or {}
+    external_links = raw.get("externalLinks") or {}
     return {
         "id": raw.get("id"),
         "name": raw.get("name"),
@@ -35,6 +36,9 @@ def _normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
         "subtypes": raw.get("subtypesText"),
         "abilities": raw.get("abilities"),
         "full_identifier": raw.get("fullIdentifier"),
+        "tcgplayer_url": external_links.get("tcgPlayerUrl"),
+        "cardmarket_url": external_links.get("cardmarketUrl"),
+        "cardtrader_url": external_links.get("cardTraderUrl"),
     }
 
 
