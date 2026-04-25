@@ -28,9 +28,6 @@ class FakeRepo:
     def search(self, **kwargs):
         return []
 
-    def get_by_id(self, card_id: int):
-        return None
-
     def count_by(self, field: str):
         return {}
 
