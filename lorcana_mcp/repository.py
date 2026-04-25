@@ -5,7 +5,6 @@ import json
 import re
 from abc import ABC, abstractmethod
 from collections import Counter
-from collections.abc import Callable
 from pathlib import Path
 from typing import Any, NamedTuple
 
@@ -84,7 +83,123 @@ def _make_row(card: dict[str, Any]) -> _SearchRow:
     )
 
 
-_Predicate = Callable[[dict[str, Any], _SearchRow], bool]
+class _Filters(NamedTuple):
+    name_lc: str | None
+    color_lc: str | None
+    cost: int | None
+    min_cost: int | None
+    max_cost: int | None
+    trait_lc: str | None
+    rarity_lc: str | None
+    inkwell: bool | None
+    set_code_str: str | None
+    min_attack: int | None
+    max_attack: int | None
+    min_defence: int | None
+    max_defence: int | None
+    body_text_lc: str | None
+    lore: int | None
+    min_lore: int | None
+    max_lore: int | None
+    card_type_lc: str | None
+
+
+_NO_FILTERS = _Filters(*([None] * 18))
+
+
+def _make_filters(
+    *,
+    name: str | None,
+    color: str | None,
+    cost: int | None,
+    min_cost: int | None,
+    max_cost: int | None,
+    trait: str | None,
+    rarity: str | None,
+    inkwell: bool | None,
+    set_code: str | None,
+    min_attack: int | None,
+    max_attack: int | None,
+    min_defence: int | None,
+    max_defence: int | None,
+    body_text: str | None,
+    lore: int | None,
+    min_lore: int | None,
+    max_lore: int | None,
+    card_type: str | None,
+) -> _Filters:
+    return _Filters(
+        name_lc=name.lower() if name else None,
+        color_lc=color.lower() if color else None,
+        cost=int(cost) if cost is not None else None,
+        min_cost=int(min_cost) if min_cost is not None else None,
+        max_cost=int(max_cost) if max_cost is not None else None,
+        trait_lc=trait.lower() if trait else None,
+        rarity_lc=rarity.lower() if rarity else None,
+        inkwell=bool(inkwell) if inkwell is not None else None,
+        set_code_str=str(set_code) if set_code is not None else None,
+        min_attack=int(min_attack) if min_attack is not None else None,
+        max_attack=int(max_attack) if max_attack is not None else None,
+        min_defence=int(min_defence) if min_defence is not None else None,
+        max_defence=int(max_defence) if max_defence is not None else None,
+        body_text_lc=body_text.lower() if body_text else None,
+        lore=int(lore) if lore is not None else None,
+        min_lore=int(min_lore) if min_lore is not None else None,
+        max_lore=int(max_lore) if max_lore is not None else None,
+        card_type_lc=card_type.lower() if card_type else None,
+    )
+
+
+def _matches(card: dict[str, Any], row: _SearchRow, f: _Filters) -> bool:
+    if f.name_lc is not None and f.name_lc not in row.name_lc:
+        return False
+    if f.color_lc is not None and row.color_lc != f.color_lc:
+        return False
+    if f.cost is not None and card.get("cost") != f.cost:
+        return False
+    if f.min_cost is not None and (card.get("cost") or 0) < f.min_cost:
+        return False
+    if f.max_cost is not None and (card.get("cost") or 0) > f.max_cost:
+        return False
+    if f.trait_lc is not None and f.trait_lc not in row.subtypes_lc:
+        return False
+    if f.rarity_lc is not None and row.rarity_lc != f.rarity_lc:
+        return False
+    if f.inkwell is not None and bool(card.get("inkwell")) != f.inkwell:
+        return False
+    if f.set_code_str is not None and row.set_code_str != f.set_code_str:
+        return False
+    if f.min_attack is not None:
+        strength = card.get("strength")
+        if strength is None or strength < f.min_attack:
+            return False
+    if f.max_attack is not None:
+        strength = card.get("strength")
+        if strength is None or strength > f.max_attack:
+            return False
+    if f.min_defence is not None:
+        willpower = card.get("willpower")
+        if willpower is None or willpower < f.min_defence:
+            return False
+    if f.max_defence is not None:
+        willpower = card.get("willpower")
+        if willpower is None or willpower > f.max_defence:
+            return False
+    if f.body_text_lc is not None and f.body_text_lc not in row.full_text_lc:
+        return False
+    if f.lore is not None and card.get("lore") != f.lore:
+        return False
+    if f.min_lore is not None:
+        lore = card.get("lore")
+        if lore is None or lore < f.min_lore:
+            return False
+    if f.max_lore is not None:
+        lore = card.get("lore")
+        if lore is None or lore > f.max_lore:
+            return False
+    if f.card_type_lc is not None and f.card_type_lc not in row.type_lc:
+        return False
+    return True
 
 
 class CardRepository(ABC):
@@ -216,73 +331,12 @@ class InMemoryCardRepository(CardRepository):
 
     _SORTABLE_FIELDS = {"id", "name", "cost", "strength", "willpower", "lore", "rarity", "set_code"}
 
-    @staticmethod
-    def _build_predicates(
-        *,
-        name: str | None,
-        color: str | None,
-        cost: int | None,
-        min_cost: int | None,
-        max_cost: int | None,
-        trait: str | None,
-        rarity: str | None,
-        inkwell: bool | None,
-        set_code: str | None,
-        min_attack: int | None,
-        max_attack: int | None,
-        min_defence: int | None,
-        max_defence: int | None,
-        body_text: str | None,
-        lore: int | None,
-        min_lore: int | None,
-        max_lore: int | None,
-        card_type: str | None,
-    ) -> list[_Predicate]:
-        checks: list[_Predicate] = []
-        if name:
-            checks.append(lambda c, r, v=name.lower(): v in r.name_lc)
-        if color:
-            checks.append(lambda c, r, v=color.lower(): r.color_lc == v)
-        if cost is not None:
-            checks.append(lambda c, r, v=int(cost): c.get("cost") == v)
-        if min_cost is not None:
-            checks.append(lambda c, r, v=int(min_cost): (c.get("cost") or 0) >= v)
-        if max_cost is not None:
-            checks.append(lambda c, r, v=int(max_cost): (c.get("cost") or 0) <= v)
-        if trait:
-            checks.append(lambda c, r, v=trait.lower(): v in r.subtypes_lc)
-        if rarity:
-            checks.append(lambda c, r, v=rarity.lower(): r.rarity_lc == v)
-        if inkwell is not None:
-            checks.append(lambda c, r, v=bool(inkwell): bool(c.get("inkwell")) == v)
-        if set_code is not None:
-            checks.append(lambda c, r, v=str(set_code): r.set_code_str == v)
-        if min_attack is not None:
-            checks.append(lambda c, r, v=int(min_attack): c.get("strength") is not None and c["strength"] >= v)
-        if max_attack is not None:
-            checks.append(lambda c, r, v=int(max_attack): c.get("strength") is not None and c["strength"] <= v)
-        if min_defence is not None:
-            checks.append(lambda c, r, v=int(min_defence): c.get("willpower") is not None and c["willpower"] >= v)
-        if max_defence is not None:
-            checks.append(lambda c, r, v=int(max_defence): c.get("willpower") is not None and c["willpower"] <= v)
-        if body_text:
-            checks.append(lambda c, r, v=body_text.lower(): v in r.full_text_lc)
-        if lore is not None:
-            checks.append(lambda c, r, v=int(lore): c.get("lore") == v)
-        if min_lore is not None:
-            checks.append(lambda c, r, v=int(min_lore): c.get("lore") is not None and c["lore"] >= v)
-        if max_lore is not None:
-            checks.append(lambda c, r, v=int(max_lore): c.get("lore") is not None and c["lore"] <= v)
-        if card_type:
-            checks.append(lambda c, r, v=card_type.lower(): v in r.type_lc)
-        return checks
-
-    def _iter_matching(self, checks: list[_Predicate]):
-        if not checks:
+    def _iter_matching(self, filters: _Filters):
+        if filters == _NO_FILTERS:
             yield from self._cards
             return
         for card, row in zip(self._cards, self._rows):
-            if all(check(card, row) for check in checks):
+            if _matches(card, row, filters):
                 yield card
 
     @staticmethod
@@ -321,7 +375,7 @@ class InMemoryCardRepository(CardRepository):
         limited = max(1, min(limit, 200))
         paged = max(0, offset)
         sort_field = sort_by if sort_by in self._SORTABLE_FIELDS else "id"
-        checks = self._build_predicates(
+        filters = _make_filters(
             name=name,
             color=color,
             cost=cost,
@@ -341,7 +395,7 @@ class InMemoryCardRepository(CardRepository):
             max_lore=max_lore,
             card_type=card_type,
         )
-        results = list(self._iter_matching(checks))
+        results = list(self._iter_matching(filters))
         results = self._sort(results, sort_field, reverse=sort_order.lower() == "desc")
         return [_slim_card(c) for c in results[paged : paged + limited]]
 
@@ -367,7 +421,7 @@ class InMemoryCardRepository(CardRepository):
         max_lore: int | None = None,
         card_type: str | None = None,
     ) -> int:
-        checks = self._build_predicates(
+        filters = _make_filters(
             name=name,
             color=color,
             cost=cost,
@@ -387,9 +441,9 @@ class InMemoryCardRepository(CardRepository):
             max_lore=max_lore,
             card_type=card_type,
         )
-        if not checks:
+        if filters == _NO_FILTERS:
             return len(self._cards)
-        return sum(1 for _ in self._iter_matching(checks))
+        return sum(1 for _ in self._iter_matching(filters))
 
     def count_by(self, field: str) -> dict[str, int]:
         counter: Counter = Counter(str(c.get(field) or "") for c in self._cards)
