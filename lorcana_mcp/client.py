@@ -37,6 +37,8 @@ def _normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
         "abilities": raw.get("abilities"),
         "full_identifier": raw.get("fullIdentifier"),
         "tcgplayer_url": external_links.get("tcgPlayerUrl"),
+        "cardmarket_url": external_links.get("cardmarketUrl"),
+        "cardtrader_url": external_links.get("cardTraderUrl"),
     }
 
 

@@ -30,6 +30,8 @@ _SEARCH_FIELDS = frozenset(
         "set_code",
         "subtypes",
         "tcgplayer_url",
+        "cardmarket_url",
+        "cardtrader_url",
     }
 )
 
