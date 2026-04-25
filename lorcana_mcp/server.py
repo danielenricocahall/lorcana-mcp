@@ -66,6 +66,8 @@ def create_server() -> FastMCP:
             "Use set_code to filter by set number (e.g. '1' for The First Chapter). "
             "Use offset to paginate through results (e.g. offset=20 for the next page). "
             "Use count_cards instead if you only need a total count. "
+            "Each card object includes a `tcgplayer_url` field linking to TCGPlayer's product "
+            "page for that card — surface it when the user asks where to buy a card. "
             "Set response_format='toon' to receive a tabular TOON-encoded string instead of "
             "JSON objects (~50% fewer tokens for large result sets); default is 'json'."
         )
