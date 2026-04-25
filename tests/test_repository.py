@@ -97,6 +97,22 @@ def test_repository_load_and_query(repo):
     assert search_results[0]["id"] == 2
 
 
+def test_find_by_full_name(repo):
+    hit = repo.find_by_full_name("Mickey Mouse - Brave Little Tailor")
+    assert hit is not None
+    assert hit["id"] == 1
+
+    case_insensitive = repo.find_by_full_name("elsa - spirit of winter")
+    assert case_insensitive is not None
+    assert case_insensitive["id"] == 2
+
+    surrounded_by_whitespace = repo.find_by_full_name("  Anna - Heir to Arendelle  ")
+    assert surrounded_by_whitespace is not None
+    assert surrounded_by_whitespace["id"] == 3
+
+    assert repo.find_by_full_name("Not A Real Card") is None
+
+
 def test_repository_aggregations(repo):
     rarity_counts = repo.count_by("rarity")
     assert rarity_counts["Common"] == 2
