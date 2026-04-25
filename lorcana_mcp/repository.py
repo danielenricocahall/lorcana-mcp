@@ -5,6 +5,7 @@ import json
 import re
 from abc import ABC, abstractmethod
 from collections import Counter
+from collections.abc import Iterable
 from functools import reduce
 from pathlib import Path
 from typing import Any
@@ -212,12 +213,12 @@ class InMemoryCardRepository(CardRepository):
         min_lore: int | None,
         max_lore: int | None,
         card_type: str | None,
-    ) -> list[dict[str, Any]]:
+    ) -> Iterable[dict[str, Any]]:
         filter_clauses = []
         if name:
-            filter_clauses.append(lambda c: name.lower() in (c.get("name") or ""))
+            filter_clauses.append(lambda c: name.lower() in (c.get("name") or "").lower())
         if color:
-            filter_clauses.append(lambda c: color.lower() == (c.get("color") or ""))
+            filter_clauses.append(lambda c: color.lower() == (c.get("color") or "").lower())
         if cost is not None:
             filter_clauses.append(lambda c: c.get("cost") == int(cost))
         if min_cost is not None:
@@ -250,9 +251,9 @@ class InMemoryCardRepository(CardRepository):
             filter_clauses.append(lambda c: c.get("lore") is not None and c["lore"] <= int(max_lore))
         if card_type:
             filter_clauses.append(lambda c: card_type.lower() in (c.get("type") or "").lower())
-        results = reduce(lambda items, f: filter(f, items), filter_clauses, cards)
-
-        return list(results)
+        if not filter_clauses:
+            return iter(cards)
+        return reduce(lambda items, f: filter(f, items), filter_clauses, cards)
 
     @staticmethod
     def _sort(cards: list[dict[str, Any]], field: str, reverse: bool) -> list[dict[str, Any]]:
@@ -311,6 +312,7 @@ class InMemoryCardRepository(CardRepository):
             max_lore=max_lore,
             card_type=card_type,
         )
+        results = list(results)
         results = self._sort(results, sort_field, reverse=sort_order.lower() == "desc")
         return [_slim_card(c) for c in results[paged : paged + limited]]
 
@@ -339,8 +341,9 @@ class InMemoryCardRepository(CardRepository):
         max_lore: int | None = None,
         card_type: str | None = None,
     ) -> int:
-        return len(
-            self._filter(
+        return sum(
+            1
+            for _ in self._filter(
                 self._cards,
                 name=name,
                 color=color,
