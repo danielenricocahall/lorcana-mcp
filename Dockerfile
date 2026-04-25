@@ -1,4 +1,5 @@
-FROM python:3.13-slim
+FROM ghcr.io/astral-sh/uv:python3.14-bookworm-slim
+RUN uv python install 3.14t
 
 LABEL io.modelcontextprotocol.server.name="io.github.danielenricocahall/lorcana-mcp"
 
@@ -7,8 +8,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_LINK_MODE=copy
 
 WORKDIR /app
-
-RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
