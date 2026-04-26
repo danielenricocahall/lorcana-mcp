@@ -14,7 +14,10 @@ def _env_bool(name: str, default: bool) -> bool:
 
 @dataclass(frozen=True)
 class LorcanaConfig:
-    api_url: str = os.getenv("LORCANA_API", "https://lorcanajson.org/files/current/en/allCards.json")
+    api_url: str = os.getenv(
+        "LORCANA_API",
+        "https://danielenricocahall.github.io/lorcana-mcp/allCards.json",
+    )
     cache_path: Path = Path(os.getenv("LORCANA_CACHE_PATH", "cards.json"))
     request_timeout_seconds: float = float(os.getenv("LORCANA_HTTP_TIMEOUT_SECONDS", "60"))
     refresh_on_startup: bool = _env_bool("LORCANA_REFRESH_ON_STARTUP", False)

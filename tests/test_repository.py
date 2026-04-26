@@ -22,7 +22,7 @@ SAMPLE_CARDS = [
         "cost": 3,
         "inkwell": 1,
         "rarity": "Common",
-        "color": "Amber",
+        "color": ["Amber"],
         "subtypes": "Hero • Captain",
         "set_code": "1",
         "type": "Character",
@@ -40,7 +40,7 @@ SAMPLE_CARDS = [
         "cost": 5,
         "inkwell": 0,
         "rarity": "Legendary",
-        "color": "Amethyst",
+        "color": ["Amethyst"],
         "subtypes": "Storyborn • Queen",
         "set_code": "2",
         "type": "Character",
@@ -58,7 +58,7 @@ SAMPLE_CARDS = [
         "cost": 2,
         "inkwell": 1,
         "rarity": "Common",
-        "color": "Amber",
+        "color": ["Amber"],
         "subtypes": "Storyborn • Princess • Hero",
         "set_code": "2",
         "type": "Character",
@@ -76,7 +76,7 @@ SAMPLE_CARDS = [
         "cost": 4,
         "inkwell": 1,
         "rarity": "Rare",
-        "color": "Amethyst",
+        "color": ["Amethyst"],
         "subtypes": None,
         "set_code": "1",
         "type": "Action",
@@ -85,16 +85,49 @@ SAMPLE_CARDS = [
         "lore": 0,
         "full_text": "Each opponent loses 2 lore.",
     },
+    {
+        "id": 5,
+        "name": "Pongo",
+        "version": "Ol' Rascal",
+        "full_name": "Pongo - Ol' Rascal",
+        "simple_name": "pongo ol rascal",
+        "cost": 4,
+        "inkwell": 1,
+        "rarity": "Rare",
+        "color": ["Amber", "Amethyst"],
+        "subtypes": "Storyborn • Hero",
+        "set_code": "7",
+        "type": "Character",
+        "strength": 3,
+        "willpower": 4,
+        "lore": 2,
+        "full_text": "Bond of Loyalty",
+    },
 ]
 
 
 def test_repository_load_and_query(repo):
     assert repo.has_cards is True
-    assert repo.total_cards == 4
+    assert repo.total_cards == 5
 
     search_results = repo.search(name="elsa")
     assert len(search_results) == 1
     assert search_results[0]["id"] == 2
+
+
+def test_color_filter_includes_dual_ink_cards(repo):
+    amber_results = repo.search(color="amber")
+    amber_ids = {c["id"] for c in amber_results}
+    # Mickey, Anna are pure Amber; Pongo is Amber/Amethyst dual-ink and counts too.
+    assert amber_ids == {1, 3, 5}
+
+    amethyst_results = repo.search(color="amethyst")
+    amethyst_ids = {c["id"] for c in amethyst_results}
+    # Elsa, Let It Go are pure Amethyst; Pongo is dual-ink and counts here too.
+    assert amethyst_ids == {2, 4, 5}
+
+    # Sapphire is in no card; should match nothing.
+    assert repo.search(color="sapphire") == []
 
 
 def test_find_by_full_name(repo):
@@ -117,43 +150,50 @@ def test_repository_aggregations(repo):
     rarity_counts = repo.count_by("rarity")
     assert rarity_counts["Common"] == 2
     assert rarity_counts["Legendary"] == 1
+    assert rarity_counts["Rare"] == 2
 
     top_traits = repo.top_traits(limit=3)
-    assert top_traits["Hero"] == 2
+    assert top_traits["Hero"] == 3  # Mickey, Anna, Pongo
 
+    # Dual-ink Pongo contributes to both Amber and Amethyst.
     color_distribution = repo.color_distribution()
-    assert color_distribution["amber"] == 2
-    assert color_distribution["amethyst"] == 2
+    assert color_distribution["amber"] == 3
+    assert color_distribution["amethyst"] == 3
+
+    # count_by("color") flattens the list and matches color_distribution.
+    color_counts = repo.count_by("color")
+    assert color_counts["Amber"] == 3
+    assert color_counts["Amethyst"] == 3
 
 
 def test_search_card_type_filter(repo):
     characters = repo.search(card_type="character")
-    assert len(characters) == 3
+    assert len(characters) == 4
     assert all(c["type"] == "Character" for c in characters)
 
     actions = repo.search(card_type="action")
     assert len(actions) == 1
     assert actions[0]["name"] == "Let It Go"
 
-    assert len(repo.search(card_type="Character")) == 3
+    assert len(repo.search(card_type="Character")) == 4
 
 
 def test_count_card_type_filter(repo):
-    assert repo.count(card_type="character") == 3
+    assert repo.count(card_type="character") == 4
     assert repo.count(card_type="action") == 1
     assert repo.count(card_type="item") == 0
 
 
 def test_search_pagination(repo):
-    page1 = repo.search(limit=2, offset=0)
-    page2 = repo.search(limit=2, offset=2)
+    page1 = repo.search(limit=3, offset=0)
+    page2 = repo.search(limit=3, offset=3)
 
-    assert len(page1) == 2
+    assert len(page1) == 3
     assert len(page2) == 2
     assert {r["id"] for r in page1}.isdisjoint({r["id"] for r in page2})
 
     all_ids = {r["id"] for r in page1} | {r["id"] for r in page2}
-    assert all_ids == {1, 2, 3, 4}
+    assert all_ids == {1, 2, 3, 4, 5}
 
 
 def test_search_sorting(repo):
@@ -180,7 +220,7 @@ def test_in_memory_cache_persistence(tmp_path: Path):
 
     repo2 = InMemoryCardRepository(cache_path=cache)
     assert repo2.has_cards is True
-    assert repo2.total_cards == 4
+    assert repo2.total_cards == 5
     mickey = repo2.search(name="mickey")
     assert len(mickey) == 1
     assert mickey[0]["name"] == "Mickey Mouse"

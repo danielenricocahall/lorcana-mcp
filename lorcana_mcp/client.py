@@ -1,44 +1,107 @@
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import requests
 
 from lorcana_mcp.config import LorcanaConfig
 
+_BUCKET_TO_TYPE = {
+    "characters": "Character",
+    "actions": "Action",
+    "items": "Item",
+    "locations": "Location",
+}
 
-def _normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
-    """Map lorcanajson.org fields to our internal schema column names."""
-    images = raw.get("images") or {}
-    external_links = raw.get("externalLinks") or {}
+# Ravensburger wraps inline ability names in single backslashes,
+# e.g. "\Heroic Intervention\ When you play this character...".
+_ABILITY_NAME_RE = re.compile(r"\\([^\\]+)\\")
+_NUMBER_RE = re.compile(r"^(\d+)/")
+
+
+def _pick_image(variants: list[dict[str, Any]]) -> str | None:
+    if not variants:
+        return None
+    for v in variants:
+        if v.get("variant_id") == "Regular":
+            return v.get("detail_image_url")
+    return variants[0].get("detail_image_url")
+
+
+def _parse_abilities(rules_text: str | None) -> list[dict[str, str]]:
+    if not rules_text:
+        return []
+    return [{"name": match.strip()} for match in _ABILITY_NAME_RE.findall(rules_text)]
+
+
+def _strip_ability_markers(rules_text: str | None) -> str | None:
+    if not rules_text:
+        return rules_text
+    return _ABILITY_NAME_RE.sub(r"\1", rules_text)
+
+
+def _parse_number(card_identifier: str | None) -> int | None:
+    if not card_identifier:
+        return None
+    match = _NUMBER_RE.match(card_identifier)
+    return int(match.group(1)) if match else None
+
+
+def _make_simple_name(full_name: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", full_name.lower())).strip()
+
+
+def _normalize_card(raw: dict[str, Any], card_type: str, set_lookup: dict[str, str] | None = None) -> dict[str, Any]:
+    """Map a Ravensburger catalog entry to our internal schema columns."""
+    name = (raw.get("name") or "").strip()
+    subtitle = (raw.get("subtitle") or "").strip()
+    full_name = f"{name} - {subtitle}" if subtitle else name
+
+    card_sets = raw.get("card_sets") or []
+    primary_set_id = card_sets[0] if card_sets else None
+    set_code = primary_set_id.removeprefix("set") if primary_set_id else None
+    set_name = (set_lookup or {}).get(primary_set_id) if primary_set_id else None
+
+    card_identifier = raw.get("card_identifier")
+    full_identifier = card_identifier.replace(" ", " • ") if card_identifier else None
+
+    keywords = raw.get("searchable_keywords") or []
+    story = keywords[0] if keywords else None
+
+    subtypes_list = raw.get("subtypes") or []
+    subtypes = " • ".join(subtypes_list) if subtypes_list else None
+
+    colors = [c.title() for c in (raw.get("magic_ink_colors") or [])]
+    rarity = (raw.get("rarity") or "").title() or None
+    rules_text = raw.get("rules_text")
+
     return {
-        "id": raw.get("id"),
-        "name": raw.get("name"),
-        "version": raw.get("version"),
-        "full_name": raw.get("fullName"),
-        "simple_name": raw.get("simpleName"),
-        "cost": raw.get("cost"),
-        "inkwell": raw.get("inkwell"),
+        "id": raw.get("culture_invariant_id"),
+        "name": name or None,
+        "version": subtitle or None,
+        "full_name": full_name or None,
+        "simple_name": _make_simple_name(full_name) or None,
+        "cost": raw.get("ink_cost"),
+        "inkwell": raw.get("ink_convertible"),
         "strength": raw.get("strength"),
         "willpower": raw.get("willpower"),
-        "color": raw.get("color"),
-        "type": raw.get("type"),
-        "full_text": raw.get("fullText"),
-        "flavor_text": raw.get("flavorText"),
-        "lore": raw.get("lore"),
-        "artists": raw.get("artistsText"),
-        "set_code": raw.get("setCode"),
-        "number": raw.get("number"),
-        "rarity": raw.get("rarity"),
-        "image_full": images.get("full"),
-        "image_thumbnail": images.get("thumbnail"),
-        "story": raw.get("story"),
-        "subtypes": raw.get("subtypesText"),
-        "abilities": raw.get("abilities"),
-        "full_identifier": raw.get("fullIdentifier"),
-        "tcgplayer_url": external_links.get("tcgPlayerUrl"),
-        "cardmarket_url": external_links.get("cardmarketUrl"),
-        "cardtrader_url": external_links.get("cardTraderUrl"),
+        "color": colors,
+        "type": card_type,
+        "full_text": _strip_ability_markers(rules_text),
+        "flavor_text": raw.get("flavor_text") or None,
+        "lore": raw.get("quest_value"),
+        "artists": raw.get("author"),
+        "set_code": set_code,
+        "set_name": set_name,
+        "number": _parse_number(card_identifier),
+        "rarity": rarity,
+        "image_full": _pick_image(raw.get("variants") or []),
+        "image_thumbnail": raw.get("thumbnail_url"),
+        "story": story,
+        "subtypes": subtypes,
+        "abilities": _parse_abilities(rules_text),
+        "full_identifier": full_identifier,
     }
 
 
@@ -52,11 +115,17 @@ class LorcanaApiClient:
             timeout=self._config.request_timeout_seconds,
         )
         response.raise_for_status()
-        results = response.json()
+        catalog = response.json()
 
-        if isinstance(results, list):
-            return [_normalize_card(card) for card in results if isinstance(card, dict)]
-        if isinstance(results, dict) and isinstance(results.get("cards"), list):
-            return [_normalize_card(card) for card in results["cards"] if isinstance(card, dict)]
+        cards_section = catalog.get("cards")
+        if not isinstance(cards_section, dict):
+            raise ValueError("Unexpected catalog format: 'cards' is not a bucket-grouped object.")
 
-        raise ValueError("Unexpected Lorcana API response format.")
+        set_lookup = {entry["id"]: entry.get("name") for entry in catalog.get("card_sets") or [] if entry.get("id")}
+
+        out: list[dict[str, Any]] = []
+        for bucket, card_type in _BUCKET_TO_TYPE.items():
+            for raw in cards_section.get(bucket) or []:
+                if isinstance(raw, dict):
+                    out.append(_normalize_card(raw, card_type, set_lookup))
+        return out

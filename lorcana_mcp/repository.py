@@ -28,10 +28,8 @@ _SEARCH_FIELDS = frozenset(
         "lore",
         "rarity",
         "set_code",
+        "set_name",
         "subtypes",
-        "tcgplayer_url",
-        "cardmarket_url",
-        "cardtrader_url",
     }
 )
 
@@ -229,7 +227,10 @@ class InMemoryCardRepository(CardRepository):
         if name:
             filter_clauses.append(lambda c: name.lower() in (c.get("name") or "").lower())
         if color:
-            filter_clauses.append(lambda c: color.lower() == (c.get("color") or "").lower())
+            target = color.lower()
+            # `color` is a list (single-ink = 1 entry, dual-ink = 2 entries).
+            # A dual-ink card matches a query for either of its colors.
+            filter_clauses.append(lambda c: target in [(x or "").lower() for x in (c.get("color") or [])])
         if cost is not None:
             filter_clauses.append(lambda c: c.get("cost") == int(cost))
         if min_cost is not None:
@@ -375,7 +376,14 @@ class InMemoryCardRepository(CardRepository):
         )
 
     def count_by(self, field: str) -> dict[str, int]:
-        counter: Counter = Counter(str(c.get(field) or "") for c in self._cards)
+        counter: Counter = Counter()
+        for card in self._cards:
+            value = card.get(field)
+            if isinstance(value, list):
+                for item in value:
+                    counter[str(item or "")] += 1
+            else:
+                counter[str(value or "")] += 1
         return dict(counter.most_common())
 
     def top_traits(self, limit: int = 10) -> dict[str, int]:
@@ -389,9 +397,9 @@ class InMemoryCardRepository(CardRepository):
     def color_distribution(self) -> dict[str, int]:
         counter: Counter = Counter()
         for card in self._cards:
-            color = card.get("color")
-            if color:
-                counter[color.lower()] += 1
+            for color in card.get("color") or []:
+                if color:
+                    counter[color.lower()] += 1
         return dict(counter.most_common())
 
     @property
