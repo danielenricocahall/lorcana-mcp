@@ -178,9 +178,12 @@ participating character must be ready and not have summoning sickness.
 AoE effects ("all characters") still affect Ward characters.
 
 **Vanish** - When an opponent chooses this character as the target of an action, this character
-is banished. Typically appears on Illusion characters and is designed to punish opponent
-targeting (and to feed Illusion-tribal triggers that benefit from your characters being banished).
-The action that triggered Vanish can still resolve, but with no valid target it usually fizzles.
+is banished. Vanish is a **downside** on its bearer — opponent actions that target the card
+become free removal (even soft effects like "exert chosen character" banish it outright). Vanish
+cards typically carry above-rate stats or stronger-than-usual abilities to compensate for the
+drawback. Some Illusion-tribal builds turn the banish into upside via "when one of your
+characters is banished" triggers, but the default reading is "this card is easier for opponents
+to remove — play around opponent targeting."
 
 **Boost N** - Once per turn, pay N ink to put the top card of your deck face-down under this character.
 The face-down card is not in play and cannot be looked at. Cards placed underneath typically enable
