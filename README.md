@@ -6,7 +6,7 @@ An MCP server for searching and aggregating Disney Lorcana cards.
 ## Startup behavior
 On startup, the server fetches a JSON list of cards from `https://danielenricocahall.github.io/lorcana-mcp/allCards.json`. The snapshot is refreshed daily by `data_pipeline/fetch_cards.py`, which pulls from the [Lorcast API](https://lorcast.com/), normalizes each card into our internal schema, and publishes the list to the `gh-pages` branch. The middle layer insulates running containers from Lorcast's availability and rate limits — the runtime never calls Lorcast directly.
 
-Cards are kept in-memory as a Python list for fast filtering. With ~2,900 cards this is lightweight and requires no external database. A local JSON file cache (`LORCANA_CACHE_PATH`, default `cards.json`) lets the server skip the network fetch on subsequent startups.
+Cards are kept in-memory as a Python list for fast filtering. With ~2,270 unique cards (each carrying a `printings` array for its alternate sets/rarities) this is lightweight and requires no external database. A local JSON file cache (`LORCANA_CACHE_PATH`, default `cards.json`) lets the server skip the network fetch on subsequent startups.
 
 Startup data loading is controlled by:
 
@@ -210,15 +210,17 @@ cards[2]{id,name,version,full_name,cost,inkwell,...}:
 
 ### Benchmark
 
-Measured with `benchmarks/bench_toon.py` against the live ~2,710-card dataset, tokenizing with tiktoken `cl100k_base` (used as a proxy for Claude's tokenizer):
+Measured with `benchmarks/bench_toon.py` against the live ~2,270-card dataset (post-consolidation), tokenizing with tiktoken `cl100k_base` (used as a proxy for Claude's tokenizer):
 
 | query | rows | JSON tokens | TOON tokens | Δ |
 |---|---:|---:|---:|---:|
-| `color="amber", limit=200` | 200 | 27,974 | 14,843 | **−46.9%** |
-| `color="ruby", limit=50` | 50 | 6,348 | 3,113 | **−51.0%** |
-| `card_type="action", limit=50` (sparse cols) | 50 | 5,938 | 2,770 | **−53.4%** |
-| `body_text="when", limit=50` (long full_text) | 50 | 7,253 | 3,979 | **−45.1%** |
-| `name="elsa", limit=20` | 20 | 2,910 | 1,596 | **−45.2%** |
-| **total** |  | **50,423** | **26,301** | **−47.8%** |
+| `color="amber", limit=200` | 200 | 77,535 | 69,445 | **−10.4%** |
+| `color="ruby", limit=50` | 50 | 18,356 | 16,534 | **−9.9%** |
+| `card_type="action", limit=50` (sparse cols) | 50 | 18,069 | 16,344 | **−9.5%** |
+| `body_text="when", limit=50` (long full_text) | 50 | 20,773 | 18,539 | **−10.8%** |
+| `name="elsa", limit=20` | 14 | 7,220 | 6,201 | **−14.1%** |
+| **total** |  | **141,953** | **127,063** | **−10.5%** |
 
-Reproduce with `uv run python benchmarks/bench_toon.py` (requires a populated `cards.json` cache).
+Note: TOON's relative savings are smaller than they were before the consolidation work (pre-PR-#29 the same queries showed ~50% reductions). The `printings` array is nested rather than tabular, so TOON's columnar wins on the top-level fields are partially offset by JSON-style encoding of the per-printing entries. Absolute token counts are also higher because each row now carries its alternate-printing metadata (set codes, rarities, image URLs).
+
+Reproduce with `PYTHONPATH=. uv run python benchmarks/bench_toon.py` (requires a populated `cards.json` cache).

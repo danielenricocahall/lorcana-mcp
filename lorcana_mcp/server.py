@@ -57,7 +57,7 @@ def create_server() -> FastMCP:
             f"(mode={startup_mode}). "
             "Valid color names: ruby, sapphire, emerald, amber, amethyst, steel. "
             "To count cards matching a filter (e.g. 'how many ruby cards?'), use count_cards. "
-            "To get a breakdown of all cards by color, use color_distribution. "
+            "To get a breakdown of all cards by color, use aggregate_cards(field='color'). "
             "To retrieve card details or browse cards, use search_cards.\n\n"
             f"{LORCANA_RULES}"
         ),
