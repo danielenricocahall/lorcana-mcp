@@ -80,6 +80,9 @@ def create_server() -> FastMCP:
             "Use sort_by to order results (id, name, cost, strength, willpower, lore, rarity, set_code); "
             "use sort_order='asc' or 'desc'. "
             "Use set_code to filter by set number (e.g. '1' for The First Chapter). "
+            "Use set_name to filter by set name as a case-insensitive substring "
+            "(e.g. 'Wilds Unknown', 'frozen', 'Floodborn') — preferred when the user "
+            "names a set in plain English so you don't have to look up the code first. "
             "Use offset to paginate through results (e.g. offset=20 for the next page). "
             "Use count_cards instead if you only need a total count. "
             "Set response_format='toon' to receive a tabular TOON-encoded string instead of "
@@ -96,6 +99,7 @@ def create_server() -> FastMCP:
         rarity: str | None = None,
         inkwell: bool | None = None,
         set_code: str | None = None,
+        set_name: str | None = None,
         min_attack: int | None = None,
         max_attack: int | None = None,
         min_defence: int | None = None,
@@ -122,6 +126,7 @@ def create_server() -> FastMCP:
             rarity=rarity,
             inkwell=inkwell,
             set_code=set_code,
+            set_name=set_name,
             min_attack=min_attack,
             max_attack=max_attack,
             min_defence=min_defence,
@@ -154,6 +159,9 @@ def create_server() -> FastMCP:
             "Use lore/min_lore/max_lore to filter by lore value. "
             "Use card_type to filter by card type: Character, Action, Item, Song, or Location. "
             "Use set_code to filter by set number (e.g. '1' for The First Chapter). "
+            "Use set_name to filter by set name as a case-insensitive substring "
+            "(e.g. 'Wilds Unknown', 'frozen') — preferred when the user names a set in "
+            "plain English. "
             "Color must be one of: ruby, sapphire, emerald, amber, amethyst, steel."
         )
     )
@@ -167,6 +175,7 @@ def create_server() -> FastMCP:
         rarity: str | None = None,
         inkwell: bool | None = None,
         set_code: str | None = None,
+        set_name: str | None = None,
         min_attack: int | None = None,
         max_attack: int | None = None,
         min_defence: int | None = None,
@@ -188,6 +197,7 @@ def create_server() -> FastMCP:
             rarity=rarity,
             inkwell=inkwell,
             set_code=set_code,
+            set_name=set_name,
             min_attack=min_attack,
             max_attack=max_attack,
             min_defence=min_defence,

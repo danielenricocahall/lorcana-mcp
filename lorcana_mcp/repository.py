@@ -92,6 +92,7 @@ class CardRepository(ABC):
         rarity: str | None = None,
         inkwell: bool | None = None,
         set_code: str | None = None,
+        set_name: str | None = None,
         min_attack: int | None = None,
         max_attack: int | None = None,
         min_defence: int | None = None,
@@ -162,6 +163,7 @@ class CardRepository(ABC):
         rarity: str | None = None,
         inkwell: bool | None = None,
         set_code: str | None = None,
+        set_name: str | None = None,
         min_attack: int | None = None,
         max_attack: int | None = None,
         min_defence: int | None = None,
@@ -216,6 +218,7 @@ class InMemoryCardRepository(CardRepository):
         rarity: str | None,
         inkwell: bool | None,
         set_code: str | None,
+        set_name: str | None,
         min_attack: int | None,
         max_attack: int | None,
         min_defence: int | None,
@@ -266,6 +269,17 @@ class InMemoryCardRepository(CardRepository):
                     for p in c.get("printings") or [{"set_code": c.get("set_code")}]
                 )
             )
+        if set_name:
+            target_name = set_name.strip().lower()
+
+            # Case-insensitive substring match against any printing's set name,
+            # so the model can pass the user's wording verbatim ("wilds", "Wilds
+            # Unknown", "wilds unknown") without needing the set_code mapping.
+            def _set_name_match(c: dict[str, Any], _t: str = target_name) -> bool:
+                printings = c.get("printings") or [{"set_name": c.get("set_name")}]
+                return any(_t in (p.get("set_name") or "").lower() for p in printings)
+
+            filter_clauses.append(_set_name_match)
         if min_attack is not None:
             filter_clauses.append(lambda c: c.get("strength") is not None and c["strength"] >= int(min_attack))
         if max_attack is not None:
@@ -318,6 +332,7 @@ class InMemoryCardRepository(CardRepository):
         rarity: str | None = None,
         inkwell: bool | None = None,
         set_code: str | None = None,
+        set_name: str | None = None,
         min_attack: int | None = None,
         max_attack: int | None = None,
         min_defence: int | None = None,
@@ -347,6 +362,7 @@ class InMemoryCardRepository(CardRepository):
             rarity=rarity,
             inkwell=inkwell,
             set_code=set_code,
+            set_name=set_name,
             min_attack=min_attack,
             max_attack=max_attack,
             min_defence=min_defence,
@@ -374,6 +390,7 @@ class InMemoryCardRepository(CardRepository):
         rarity: str | None = None,
         inkwell: bool | None = None,
         set_code: str | None = None,
+        set_name: str | None = None,
         min_attack: int | None = None,
         max_attack: int | None = None,
         min_defence: int | None = None,
@@ -398,6 +415,7 @@ class InMemoryCardRepository(CardRepository):
                 rarity=rarity,
                 inkwell=inkwell,
                 set_code=set_code,
+                set_name=set_name,
                 min_attack=min_attack,
                 max_attack=max_attack,
                 min_defence=min_defence,

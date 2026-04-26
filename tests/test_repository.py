@@ -383,3 +383,83 @@ def test_keyword_combines_with_other_filters(repo_keywords):
     # Rush characters in Amber: just Sven (Stitch is Ruby).
     results = repo_keywords.search(keyword="Rush", color="amber")
     assert {c["full_name"] for c in results} == {"Sven - Reindeer Steed"}
+
+
+# ---- set_name filter (case-insensitive substring; works with or without printings) ----
+
+
+CARDS_WITH_SET_NAMES = [
+    {
+        "id": "sn_1",
+        "name": "Mickey",
+        "full_name": "Mickey - The Apprentice",
+        "color": ["Amber"],
+        "type": "Character",
+        "set_code": "1",
+        "set_name": "The First Chapter",
+    },
+    {
+        "id": "sn_2",
+        "name": "Anna",
+        "full_name": "Anna - Heir to Arendelle",
+        "color": ["Amber"],
+        "type": "Character",
+        # Reprint card: canonical Set 1, with a Set 12 printing too. set_name filter
+        # should match against ANY printing's set_name (parallel to set_code).
+        "set_code": "1",
+        "set_name": "The First Chapter",
+        "printings": [
+            {"set_code": "1", "set_name": "The First Chapter", "rarity": "Common"},
+            {"set_code": "12", "set_name": "Wilds Unknown", "rarity": "Rare"},
+        ],
+    },
+    {
+        "id": "sn_3",
+        "name": "New Card",
+        "full_name": "New Card - Wilds Native",
+        "color": ["Steel"],
+        "type": "Character",
+        "set_code": "12",
+        "set_name": "Wilds Unknown",
+    },
+]
+
+
+@pytest.fixture
+def repo_set_names():
+    r = InMemoryCardRepository()
+    r.load_cards(CARDS_WITH_SET_NAMES)
+    return r
+
+
+def test_set_name_filter_substring_case_insensitive(repo_set_names):
+    # Exact name with proper casing.
+    results = repo_set_names.search(set_name="Wilds Unknown")
+    assert {c["full_name"] for c in results} == {"Anna - Heir to Arendelle", "New Card - Wilds Native"}
+
+    # Lowercase, partial — both should still match.
+    for variant in ("wilds unknown", "wilds", "  WILDS  "):
+        assert {c["full_name"] for c in repo_set_names.search(set_name=variant)} == {
+            "Anna - Heir to Arendelle",
+            "New Card - Wilds Native",
+        }
+
+
+def test_set_name_filter_matches_any_printing(repo_set_names):
+    # Anna's CANONICAL set_name is "The First Chapter" but she has a Wilds Unknown
+    # reprint in her printings array — a set_name filter for Wilds should still hit her.
+    wilds = repo_set_names.search(set_name="wilds")
+    assert "Anna - Heir to Arendelle" in {c["full_name"] for c in wilds}
+
+    first = repo_set_names.search(set_name="First Chapter")
+    assert {c["full_name"] for c in first} == {"Mickey - The Apprentice", "Anna - Heir to Arendelle"}
+
+
+def test_set_name_filter_no_matches_returns_empty(repo_set_names):
+    assert repo_set_names.search(set_name="Ravnica") == []
+
+
+def test_count_with_set_name_matches_search(repo_set_names):
+    assert repo_set_names.count(set_name="Wilds Unknown") == 2
+    assert repo_set_names.count(set_name="First Chapter") == 2
+    assert repo_set_names.count(set_name="Ravnica") == 0
