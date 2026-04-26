@@ -30,8 +30,6 @@ jobs:
         run: uv sync --no-dev
 
       - name: Fetch card catalog
-        env:
-          RAVENSBURGER_BASIC_AUTH: ${{ secrets.RAVENSBURGER_AUTH }}
         run: uv run python data_pipeline/fetch_cards.py "${RUNNER_TEMP}/allCards.json"
 
       - name: Publish to gh-pages

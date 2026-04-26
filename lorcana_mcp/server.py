@@ -76,8 +76,6 @@ def create_server() -> FastMCP:
             "Use sort_by to order results (id, name, cost, strength, willpower, lore, rarity, set_code); "
             "use sort_order='asc' or 'desc'. "
             "Use set_code to filter by set number (e.g. '1' for The First Chapter). "
-            "Use story to filter by Disney property (e.g. 'Toy Story', 'Encanto', 'Hercules'); "
-            "matches case-insensitively as a substring of the card's `story` field. "
             "Use offset to paginate through results (e.g. offset=20 for the next page). "
             "Use count_cards instead if you only need a total count. "
             "Set response_format='toon' to receive a tabular TOON-encoded string instead of "
@@ -103,7 +101,6 @@ def create_server() -> FastMCP:
         min_lore: int | None = None,
         max_lore: int | None = None,
         card_type: str | None = None,
-        story: str | None = None,
         limit: int = 20,
         offset: int = 0,
         sort_by: str = "id",
@@ -129,7 +126,6 @@ def create_server() -> FastMCP:
             min_lore=min_lore,
             max_lore=max_lore,
             card_type=card_type,
-            story=story,
             limit=limit,
             offset=offset,
             sort_by=sort_by,
@@ -148,8 +144,6 @@ def create_server() -> FastMCP:
             "Use lore/min_lore/max_lore to filter by lore value. "
             "Use card_type to filter by card type: Character, Action, Item, Song, or Location. "
             "Use set_code to filter by set number (e.g. '1' for The First Chapter). "
-            "Use story to filter by Disney property (e.g. 'Toy Story', 'Encanto'); "
-            "matches case-insensitively as a substring of the card's `story` field. "
             "Color must be one of: ruby, sapphire, emerald, amber, amethyst, steel."
         )
     )
@@ -172,7 +166,6 @@ def create_server() -> FastMCP:
         min_lore: int | None = None,
         max_lore: int | None = None,
         card_type: str | None = None,
-        story: str | None = None,
     ) -> int:
         return repository.count(
             name=name,
@@ -193,7 +186,6 @@ def create_server() -> FastMCP:
             min_lore=min_lore,
             max_lore=max_lore,
             card_type=card_type,
-            story=story,
         )
 
     _AGGREGABLE_FIELDS = {"cost", "rarity", "color", "set_code", "type"}

@@ -4,9 +4,9 @@
 An MCP server for searching and aggregating Disney Lorcana cards. 
 
 ## Startup behavior
-On startup, the server fetches all cards from a self-hosted JSON snapshot at `https://danielenricocahall.github.io/lorcana-mcp/allCards.json`. The snapshot is regenerated daily by `data_pipeline/fetch_cards.py` against the official Ravensburger Lorcana API and published to the `gh-pages` branch.
+On startup, the server fetches a JSON list of cards from `https://danielenricocahall.github.io/lorcana-mcp/allCards.json`. The snapshot is refreshed daily by `data_pipeline/fetch_cards.py`, which pulls from the [Lorcast API](https://lorcast.com/), normalizes each card into our internal schema, and publishes the list to the `gh-pages` branch. The middle layer insulates running containers from Lorcast's availability and rate limits — the runtime never calls Lorcast directly.
 
-Cards are kept in-memory as a Python list for fast filtering. With ~2,900 cards this is lightweight and requires no external database. A local JSON file cache (`LORCANA_CACHE_PATH`, default `cards.json`) lets the server skip the API fetch on subsequent startups.
+Cards are kept in-memory as a Python list for fast filtering. With ~2,900 cards this is lightweight and requires no external database. A local JSON file cache (`LORCANA_CACHE_PATH`, default `cards.json`) lets the server skip the network fetch on subsequent startups.
 
 Startup data loading is controlled by:
 
