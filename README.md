@@ -4,9 +4,9 @@
 An MCP server for searching and aggregating Disney Lorcana cards. 
 
 ## Startup behavior
-On startup, the server fetches all cards from [lorcanajson.org](https://lorcanajson.org) via a GET request to `https://lorcanajson.org/files/current/en/allCards.json`.
+On startup, the server fetches all cards from a self-hosted JSON snapshot at `https://danielenricocahall.github.io/lorcana-mcp/allCards.json`. The snapshot is regenerated daily by `data_pipeline/fetch_cards.py` against the official Ravensburger Lorcana API and published to the `gh-pages` branch.
 
-Cards are kept in-memory as a Python list for fast filtering. With ~2,700 cards this is lightweight and requires no external database. A local JSON file cache (`LORCANA_CACHE_PATH`, default `cards.json`) lets the server skip the API fetch on subsequent startups.
+Cards are kept in-memory as a Python list for fast filtering. With ~2,900 cards this is lightweight and requires no external database. A local JSON file cache (`LORCANA_CACHE_PATH`, default `cards.json`) lets the server skip the API fetch on subsequent startups.
 
 Startup data loading is controlled by:
 
@@ -65,7 +65,7 @@ Notes:
 - Use a volume to persist the JSON cache across restarts.
 
 ## Config
-- `LORCANA_API` (default: `https://lorcanajson.org/files/current/en/allCards.json`)
+- `LORCANA_API` (default: `https://danielenricocahall.github.io/lorcana-mcp/allCards.json`)
 - `LORCANA_CACHE_PATH` (default: `cards.json`) — local file for caching fetched cards
 - `LORCANA_HTTP_TIMEOUT_SECONDS` (default: `60`)
 - `LORCANA_REFRESH_ON_STARTUP` (`false` default)
@@ -184,14 +184,11 @@ Once connected to an MCP client, you can ask natural language questions like:
 ## MCP tools
 - `search_cards` — filter and retrieve card objects (supports `response_format="toon"` for ~50% fewer tokens)
 - `count_cards` — count cards matching a filter without returning full objects
-- `aggregate_cards` — count cards grouped by any field
+- `aggregate_cards` — card counts grouped by `cost` (ink curve), `rarity`, `color`, `set_code`, or `type`
+- `resolve_card` — fuzzy-match an informal/partial/misspelled card name to the closest cards (returns full card data)
+- `top_traits` — most common traits across all cards
 - `export_deck` — render a deck as a Dreamborn/Pixelborn-compatible text deck list
 - `import_deck` — parse a Dreamborn/Pixelborn-style deck list, returning resolved cards plus any unresolved lines with fuzzy candidates
-- `ink_curve_stats` — card counts by ink cost
-- `top_traits` — most common traits across all cards
-- `color_distribution` — card count per color
-- `rarity_breakdown` — card count per rarity
-- `set_distribution` — card count per set
 - `server_status` — startup metadata (card count, config)
 
 ## TOON response format
