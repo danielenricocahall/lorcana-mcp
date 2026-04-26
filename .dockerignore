@@ -9,6 +9,11 @@ __pycache__
 *.pyo
 *.pyd
 *.db
+# Local runtime cache. Already in .gitignore, but Docker's COPY would otherwise
+# bake whatever the dev's last run left behind into the image — and once
+# LORCANA_SKIP_IF_DB_EXISTS=true (default) sees it, the runtime never refetches,
+# so users would get whatever stale data was on disk at build time.
+cards.json
 tests
 data_pipeline
 benchmarks
