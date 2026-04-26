@@ -8,7 +8,7 @@ multi-type list, pre-Set 7 cards with no `inks` field, etc.).
 
 from __future__ import annotations
 
-from data_pipeline.fetch_cards import normalize_card
+from data_pipeline.fetch_cards import consolidate_by_full_name, normalize_card
 
 CHARACTER_RAW = {
     "id": "crd_a",
@@ -176,3 +176,96 @@ def test_normalize_handles_non_numeric_collector_number_for_promos():
     out = normalize_card(promo)
     assert out["number"] is None  # Can't parse "P1-3" as int.
     assert out["full_identifier"] == "P1-3 • 1"  # But still surface it as a string.
+
+
+def test_normalize_humanizes_snake_cased_rarity():
+    # Lorcast emits "Super_rare" with an underscore. Make it human-readable.
+    out = normalize_card({**CHARACTER_RAW, "rarity": "Super_rare"})
+    assert out["rarity"] == "Super Rare"
+    # Single-word rarities pass through unchanged.
+    assert normalize_card({**CHARACTER_RAW, "rarity": "Common"})["rarity"] == "Common"
+    # Already-spaced multi-word rarities don't get double-titled.
+    assert normalize_card({**CHARACTER_RAW, "rarity": "Super Rare"})["rarity"] == "Super Rare"
+    # Missing/None pass through.
+    assert normalize_card({**CHARACTER_RAW, "rarity": None})["rarity"] is None
+
+
+# ---- consolidate_by_full_name ----
+
+
+def _normalized(*, full_name, set_code, number, rarity, **extra):
+    """Build a normalized-card-shaped dict for consolidation tests without going through Lorcast."""
+    return {
+        "id": f"crd_{set_code}_{number}",
+        "name": full_name.split(" - ")[0] if " - " in full_name else full_name,
+        "version": full_name.split(" - ")[1] if " - " in full_name else None,
+        "full_name": full_name,
+        "simple_name": full_name.lower(),
+        "cost": 3,
+        "inkwell": True,
+        "color": ["Ruby"],
+        "type": "Character",
+        "full_text": "test",
+        "set_code": str(set_code),
+        "set_name": f"Set {set_code}",
+        "number": number,
+        "rarity": rarity,
+        "image_full": f"https://x/{set_code}/{number}.avif",
+        "image_thumbnail": f"https://x/{set_code}/{number}_s.avif",
+        "full_identifier": f"{number} • {set_code}",
+        **extra,
+    }
+
+
+def test_consolidate_single_printing_yields_single_entry_with_one_printing():
+    cards = [_normalized(full_name="Mickey Mouse - Brave Little Tailor", set_code="1", number=115, rarity="Legendary")]
+    out = consolidate_by_full_name(cards)
+    assert len(out) == 1
+    assert out[0]["full_name"] == "Mickey Mouse - Brave Little Tailor"
+    assert len(out[0]["printings"]) == 1
+    assert out[0]["printings"][0]["set_code"] == "1"
+    assert out[0]["printings"][0]["rarity"] == "Legendary"
+
+
+def test_consolidate_picks_earliest_expansion_set_as_canonical():
+    # Same card printed in Set 9 (rare), Set 9 Enchanted, and a Gateway promo.
+    # Canonical should be the Set 9 rare (numeric set, lowest collector number).
+    cards = [
+        _normalized(full_name="Ariel - Adventurous Collector", set_code="9", number=10, rarity="Super Rare"),
+        _normalized(full_name="Ariel - Adventurous Collector", set_code="9", number=210, rarity="Enchanted"),
+        _normalized(full_name="Ariel - Adventurous Collector", set_code="P3", number=1, rarity="Super Rare"),
+    ]
+    out = consolidate_by_full_name(cards)
+    assert len(out) == 1
+    consolidated = out[0]
+    # Canonical (top-level) is the Set 9 rare with the lowest collector number.
+    assert consolidated["set_code"] == "9"
+    assert consolidated["rarity"] == "Super Rare"
+    assert consolidated["number"] == 10
+    # All three printings preserved, in canonical order.
+    set_codes = [p["set_code"] for p in consolidated["printings"]]
+    assert set_codes == ["9", "9", "P3"]
+    rarities = [p["rarity"] for p in consolidated["printings"]]
+    assert rarities == ["Super Rare", "Enchanted", "Super Rare"]
+
+
+def test_consolidate_groups_separate_cards_separately():
+    cards = [
+        _normalized(full_name="Card A", set_code="1", number=1, rarity="Common"),
+        _normalized(full_name="Card B", set_code="1", number=2, rarity="Common"),
+        _normalized(full_name="Card A", set_code="2", number=50, rarity="Rare"),  # reprint
+    ]
+    out = consolidate_by_full_name(cards)
+    by_name = {c["full_name"]: c for c in out}
+    assert set(by_name.keys()) == {"Card A", "Card B"}
+    assert len(by_name["Card A"]["printings"]) == 2
+    assert len(by_name["Card B"]["printings"]) == 1
+
+
+def test_consolidate_skips_entries_with_no_full_name():
+    cards = [
+        _normalized(full_name="Real Card", set_code="1", number=1, rarity="Common"),
+        {**_normalized(full_name="Real Card", set_code="1", number=1, rarity="Common"), "full_name": None},
+    ]
+    out = consolidate_by_full_name(cards)
+    assert len(out) == 1  # The None-full_name entry is dropped.

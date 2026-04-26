@@ -30,6 +30,7 @@ _SEARCH_FIELDS = frozenset(
         "set_code",
         "set_name",
         "subtypes",
+        "printings",
     }
 )
 
@@ -240,11 +241,28 @@ class InMemoryCardRepository(CardRepository):
         if trait:
             filter_clauses.append(lambda c: trait.lower() in (c.get("subtypes") or "").lower())
         if rarity:
-            filter_clauses.append(lambda c: rarity.lower() == (c.get("rarity") or "").lower())
+            target = rarity.lower()
+            # Match against any printing's rarity, not just the canonical printing.
+            # "rarity=Enchanted" should find cards that have an Enchanted printing
+            # even if the canonical (earliest) printing was a different rarity.
+            filter_clauses.append(
+                lambda c: any(
+                    target == (p.get("rarity") or "").lower()
+                    for p in c.get("printings") or [{"rarity": c.get("rarity")}]
+                )
+            )
         if inkwell is not None:
             filter_clauses.append(lambda c: bool(c.get("inkwell")) == inkwell)
         if set_code is not None:
-            filter_clauses.append(lambda c: str(c.get("set_code") or "") == str(set_code))
+            target_set = str(set_code)
+            # Same any-printing semantic: a card "is in set N" if any of its
+            # printings is in set N, not just the canonical printing.
+            filter_clauses.append(
+                lambda c: any(
+                    str(p.get("set_code") or "") == target_set
+                    for p in c.get("printings") or [{"set_code": c.get("set_code")}]
+                )
+            )
         if min_attack is not None:
             filter_clauses.append(lambda c: c.get("strength") is not None and c["strength"] >= int(min_attack))
         if max_attack is not None:
@@ -375,9 +393,18 @@ class InMemoryCardRepository(CardRepository):
             )
         )
 
+    _PRINTING_AGGREGATE_FIELDS = {"set_code", "rarity"}
+
     def count_by(self, field: str) -> dict[str, int]:
         counter: Counter = Counter()
         for card in self._cards:
+            if field in self._PRINTING_AGGREGATE_FIELDS:
+                # Aggregate per printing so an Ariel with Common + Enchanted printings
+                # counts in both rarity buckets, and a reprint counts in both sets.
+                printings = card.get("printings") or [{field: card.get(field)}]
+                for p in printings:
+                    counter[str(p.get(field) or "")] += 1
+                continue
             value = card.get(field)
             if isinstance(value, list):
                 for item in value:

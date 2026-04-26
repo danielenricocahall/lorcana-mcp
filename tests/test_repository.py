@@ -224,3 +224,73 @@ def test_in_memory_cache_persistence(tmp_path: Path):
     mickey = repo2.search(name="mickey")
     assert len(mickey) == 1
     assert mickey[0]["name"] == "Mickey Mouse"
+
+
+# ---- printings array: cross-printing filter and aggregate semantics ----
+
+
+# A card with three printings: canonical Set 9 Super Rare, plus an Enchanted
+# variant in the same set, plus a Gateway promo. Top-level fields reflect the
+# canonical printing; `printings` carries all three.
+ARIEL_WITH_PRINTINGS = {
+    "id": "crd_ariel_9",
+    "name": "Ariel",
+    "version": "Adventurous Collector",
+    "full_name": "Ariel - Adventurous Collector",
+    "simple_name": "ariel adventurous collector",
+    "cost": 4,
+    "inkwell": True,
+    "rarity": "Super Rare",  # canonical
+    "color": ["Ruby"],
+    "subtypes": "Storyborn • Hero • Princess",
+    "set_code": "9",  # canonical
+    "type": "Character",
+    "strength": 3,
+    "willpower": 4,
+    "lore": 2,
+    "full_text": "Test text",
+    "printings": [
+        {"id": "crd_ariel_9", "set_code": "9", "rarity": "Super Rare"},
+        {"id": "crd_ariel_9_e", "set_code": "9", "rarity": "Enchanted"},
+        {"id": "crd_ariel_p3", "set_code": "P3", "rarity": "Super Rare"},
+    ],
+}
+
+
+@pytest.fixture
+def repo_with_printings():
+    r = InMemoryCardRepository()
+    r.load_cards([ARIEL_WITH_PRINTINGS])
+    return r
+
+
+def test_rarity_filter_matches_any_printing_not_just_canonical(repo_with_printings):
+    # Canonical rarity is "Super Rare", but Ariel also has an Enchanted printing.
+    # rarity="Enchanted" should still find her.
+    assert len(repo_with_printings.search(rarity="Enchanted")) == 1
+    assert len(repo_with_printings.search(rarity="Super Rare")) == 1
+    # Rarities not in any printing don't match.
+    assert repo_with_printings.search(rarity="Common") == []
+
+
+def test_set_code_filter_matches_any_printing_not_just_canonical(repo_with_printings):
+    # Canonical set is 9, but Ariel also has a P3 (Gateway) printing.
+    assert len(repo_with_printings.search(set_code="9")) == 1
+    assert len(repo_with_printings.search(set_code="P3")) == 1
+    assert repo_with_printings.search(set_code="1") == []
+
+
+def test_count_by_aggregates_per_printing_for_set_code_and_rarity(repo_with_printings):
+    # Three printings: Set 9 (Super Rare) + Set 9 (Enchanted) + Set P3 (Super Rare).
+    set_counts = repo_with_printings.count_by("set_code")
+    assert set_counts == {"9": 2, "P3": 1}
+    rarity_counts = repo_with_printings.count_by("rarity")
+    assert rarity_counts == {"Super Rare": 2, "Enchanted": 1}
+
+
+def test_legacy_cards_without_printings_array_still_work(repo):
+    # The original fixture cards have no `printings` field. Filters should
+    # fall back to the top-level set_code/rarity transparently.
+    assert len(repo.search(set_code="1")) == 2  # Mickey + Let It Go
+    assert len(repo.search(rarity="Legendary")) == 1  # Elsa
+    assert repo.count_by("rarity") == {"Common": 2, "Legendary": 1, "Rare": 2}

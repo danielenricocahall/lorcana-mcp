@@ -89,6 +89,14 @@ def _safe_int(value: Any) -> int | None:
         return None
 
 
+def _normalize_rarity(value: Any) -> str | None:
+    """Lorcast emits multi-word rarities snake-cased (e.g. "Super_rare"). Make
+    them human-readable: "Super_rare" → "Super Rare", "Common" → "Common"."""
+    if not value:
+        return None
+    return " ".join(part.capitalize() for part in str(value).replace("_", " ").split())
+
+
 def normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
     """Map a Lorcast catalog entry to our internal schema columns.
 
@@ -158,7 +166,7 @@ def normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
         "set_code": set_code,
         "set_name": set_name,
         "number": _safe_int(collector_number),
-        "rarity": raw.get("rarity"),
+        "rarity": _normalize_rarity(raw.get("rarity")),
         "image_full": image_full,
         "image_thumbnail": image_thumbnail,
         "subtypes": subtypes,
@@ -172,6 +180,62 @@ def _card_dedupe_key(raw: dict[str, Any]) -> str:
         return str(raw["id"])
     set_obj = raw.get("set") or {}
     return f"{set_obj.get('code', '')}|{raw.get('collector_number', '')}|{raw.get('name', '')}|{raw.get('version', '')}"
+
+
+# Fields that identify a specific printing rather than the gameplay card itself.
+# These get collected into the per-card `printings` array during consolidation.
+_PRINTING_FIELDS = (
+    "id",
+    "set_code",
+    "set_name",
+    "number",
+    "rarity",
+    "image_full",
+    "image_thumbnail",
+    "full_identifier",
+)
+
+
+def _printing_sort_key(card: dict[str, Any]) -> tuple:
+    """Sort printings so the earliest expansion-set printing is canonical.
+
+    Numeric set codes ("1".."12") rank ahead of non-numeric promo codes
+    ("P1", "P2", "C2", "DIS", etc.). Within a set, lower collector number
+    wins. Falls back to id for deterministic ordering across runs.
+    """
+    set_code = str(card.get("set_code") or "")
+    try:
+        set_rank: tuple = (0, int(set_code))
+    except ValueError:
+        set_rank = (1, set_code)
+    number = card.get("number")
+    return (set_rank, number if number is not None else 10**9, str(card.get("id") or ""))
+
+
+def consolidate_by_full_name(cards: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Collapse multiple printings of the same card into one entry.
+
+    Each output card has top-level gameplay fields from its canonical (earliest
+    expansion-set) printing, plus a `printings` array carrying per-printing
+    details for every printing — including the canonical one — so callers can
+    answer printing-level questions ("which sets is this in?", "is there an
+    Enchanted version?") without losing any data.
+    """
+    groups: dict[str, list[dict[str, Any]]] = {}
+    for card in cards:
+        full_name = card.get("full_name")
+        if not full_name:
+            continue
+        groups.setdefault(full_name, []).append(card)
+
+    consolidated: list[dict[str, Any]] = []
+    for full_name, printings in groups.items():
+        printings_sorted = sorted(printings, key=_printing_sort_key)
+        canonical = printings_sorted[0]
+        entry = {**canonical}
+        entry["printings"] = [{f: p.get(f) for f in _PRINTING_FIELDS} for p in printings_sorted]
+        consolidated.append(entry)
+    return consolidated
 
 
 def fetch_all_normalized_cards() -> list[dict[str, Any]]:
@@ -191,7 +255,8 @@ def fetch_all_normalized_cards() -> list[dict[str, Any]]:
 
         time.sleep(REQUEST_DELAY_SECONDS)
 
-    return [normalize_card(raw) for raw in seen.values()]
+    normalized = [normalize_card(raw) for raw in seen.values()]
+    return consolidate_by_full_name(normalized)
 
 
 def main(argv: list[str]) -> int:
