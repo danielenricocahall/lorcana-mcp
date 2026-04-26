@@ -88,8 +88,8 @@ Card `full_text` strings use these symbols. Decode them when reading abilities:
   Singer keyword.
 **Item** - Stays in play. No summoning sickness. Cannot quest or challenge, and cannot be challenged.
   Items can have passive abilities or activated abilities that require exerting the item (e.g., "Exert
-  this item to give a character +1 lore this turn"). Items cannot be challenged at all — exerting an
-  item has no downside beyond the item being unavailable until your next Ready Step.
+  this item to give a character +1 lore this turn"). Exerting an item has no downside beyond the item
+  being unavailable until your next Ready Step.
 **Location** - Stays in play. Has Willpower, Lore, and a Move Cost.
   - Locations have NO ready/exerted state — they are always played horizontally and stay that way.
   - Locations passively gain lore equal to their lore value during the Set Step of your Beginning Phase
