@@ -284,14 +284,16 @@ def create_server() -> FastMCP:
 
     @mcp.tool(
         description=(
-            "Validate a Lorcana deck against the format rules: exactly 60 cards, "
-            "max 4 copies of any card, max 2 distinct ink colors across the deck. "
+            "Validate a Lorcana deck against the format rules: at least 60 cards "
+            "(no maximum — 60 is just the floor), max 4 copies of any card, max 2 "
+            "distinct ink colors across the deck. "
             "Each entry is `{name: str, count: int}` where `name` is the card's "
             "`full_name` (e.g. 'Mickey Mouse - Brave Little Tailor'). "
             "Returns `{legal: bool, total_cards, inks, violations: [...]}`. "
-            "Violation types: `deck_size` (wrong total), `max_copies` (>4 of one card), "
-            "`ink_limit` (>2 distinct colors — also catches dual-ink cards adding a "
-            "forbidden third color), `unknown_card` (name didn't resolve to a known card). "
+            "Violation types: `deck_size` (under 60 — total below minimum), "
+            "`max_copies` (>4 of one card), `ink_limit` (>2 distinct colors — also "
+            "catches dual-ink cards adding a forbidden third color), `unknown_card` "
+            "(name didn't resolve to a known card). "
             "If you have the output of `import_deck`, build the input as "
             "`[{name: card.full_name, count: count}]` for each parsed entry."
         )

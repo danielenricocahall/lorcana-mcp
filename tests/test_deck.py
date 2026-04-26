@@ -110,6 +110,15 @@ def test_validate_deck_legal_mono_amber():
     }
 
 
+def test_validate_deck_oversized_is_legal():
+    # 60 is the minimum, not the cap. A 64-card mono-Amber deck is legal.
+    deck = [_entry(_card(f"Amber Card {i}", color=["Amber"]), 4) for i in range(16)]
+    result = validate_deck(deck)
+    assert result["total_cards"] == 64
+    assert result["legal"] is True
+    assert result["violations"] == []
+
+
 def test_validate_deck_legal_two_colors_with_dual_ink():
     amber_cards = [_entry(_card(f"Amber {i}", color=["Amber"]), 4) for i in range(7)]
     amethyst_cards = [_entry(_card(f"Amethyst {i}", color=["Amethyst"]), 4) for i in range(7)]
@@ -142,7 +151,7 @@ def test_validate_deck_size_and_copy_violations():
     assert "deck_size" in types
     assert "max_copies" in types
     size = next(v for v in result["violations"] if v["type"] == "deck_size")
-    assert size == {"type": "deck_size", "total": 55, "expected": 60}
+    assert size == {"type": "deck_size", "total": 55, "min": 60}
     copies = next(v for v in result["violations"] if v["type"] == "max_copies")
     assert copies == {"type": "max_copies", "card": "Mickey - Brave Little Tailor", "count": 5, "max": 4}
 

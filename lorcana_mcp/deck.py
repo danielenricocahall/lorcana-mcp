@@ -15,7 +15,7 @@ from __future__ import annotations
 import re
 from typing import Any, NamedTuple
 
-LORCANA_DECK_SIZE = 60
+LORCANA_MIN_DECK_SIZE = 60
 LORCANA_MAX_COPIES = 4
 LORCANA_MAX_INKS = 2
 
@@ -86,17 +86,17 @@ def validate_deck(entries: list[dict[str, Any]]) -> dict[str, Any]:
     the resolved card dict (with `color`, `inkwell`, etc.) or `None` if the
     name didn't resolve.
 
-    Rules enforced: deck size == 60, max 4 copies of any card, ≤ 2 distinct
-    ink colors across the deck. The dual-ink rule is folded into the ink
-    limit — including a Ruby/Sapphire dual-ink card adds both colors to the
-    deck's ink set, so a deck that would otherwise be mono-Ruby will trip
-    `ink_limit` if the union exceeds 2.
+    Rules enforced: deck size ≥ 60 (no maximum — 60 is just the floor), max
+    4 copies of any card, ≤ 2 distinct ink colors across the deck. The
+    dual-ink rule is folded into the ink limit — including a Ruby/Sapphire
+    dual-ink card adds both colors to the deck's ink set, so a deck that
+    would otherwise be mono-Ruby will trip `ink_limit` if the union exceeds 2.
     """
     violations: list[dict[str, Any]] = []
     total = sum(int(e.get("count", 0)) for e in entries)
 
-    if total != LORCANA_DECK_SIZE:
-        violations.append({"type": "deck_size", "total": total, "expected": LORCANA_DECK_SIZE})
+    if total < LORCANA_MIN_DECK_SIZE:
+        violations.append({"type": "deck_size", "total": total, "min": LORCANA_MIN_DECK_SIZE})
 
     counts_by_name: dict[str, int] = {}
     for entry in entries:
