@@ -15,6 +15,10 @@ Card `full_text` strings use these symbols. Decode them when reading abilities:
 - `{L}` — Lore.
 - `{W}` — Willpower.
 
+When summarizing cards or quoting their text to a user, **always translate these symbols into
+their decoded form** rather than echoing the raw symbol. Write "4 ink" not "4 {I}", "exert" not
+"{E}", "3 strength" not "3 {S}". The braces are an internal data format; users shouldn't see them.
+
 ### Deck Building
 - Minimum 60 cards per deck. 60 is the standard size; there is no maximum, but
   larger decks dilute the chance of drawing any specific card.
