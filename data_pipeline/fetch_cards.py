@@ -86,7 +86,15 @@ def main(argv: list[str]) -> int:
     with open(output_path, "w", encoding="utf-8") as fh:
         json.dump(catalog, fh, ensure_ascii=False, indent=2, sort_keys=True)
         fh.write("\n")
-    logger.info("Wrote %d cards to %s", len(catalog.get("cards", [])), output_path)
+
+    # The catalog groups cards under buckets like actions / characters / items / locations,
+    # so sum across the buckets for an accurate count.
+    cards_section = catalog.get("cards", {})
+    if isinstance(cards_section, dict):
+        total = sum(len(v) for v in cards_section.values() if isinstance(v, list))
+    else:
+        total = len(cards_section)
+    logger.info("Wrote %d cards to %s (catalog_hash=%s)", total, output_path, catalog.get("catalog_hash"))
     return 0
 
 
