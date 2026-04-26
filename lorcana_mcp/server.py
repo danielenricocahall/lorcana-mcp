@@ -9,7 +9,18 @@ from fastmcp import FastMCP
 
 from lorcana_mcp.client import LorcanaApiClient
 from lorcana_mcp.config import LorcanaConfig
-from lorcana_mcp.deck import MalformedLine, ParsedLine, dump_deck, parse_lines
+from lorcana_mcp.deck import (
+    MalformedLine,
+    ParsedLine,
+    dump_deck,
+    parse_lines,
+)
+from lorcana_mcp.deck import (
+    deck_stats as _deck_stats,
+)
+from lorcana_mcp.deck import (
+    validate_deck as _validate_deck,
+)
 from lorcana_mcp.repository import InMemoryCardRepository
 from lorcana_mcp.rules import LORCANA_RULES
 
@@ -260,6 +271,47 @@ def create_server() -> FastMCP:
             candidates = repository.resolve_card(line.name, limit=3)
             unresolved.append({"raw": line.raw, "candidates": candidates})
         return {"parsed": parsed, "unresolved": unresolved}
+
+    def _resolve_deck_entries(deck: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return [
+            {
+                "count": int(entry.get("count", 0)),
+                "name": str(entry.get("name", "")),
+                "card": repository.find_by_full_name(str(entry.get("name", ""))),
+            }
+            for entry in deck
+        ]
+
+    @mcp.tool(
+        description=(
+            "Validate a Lorcana deck against the format rules: exactly 60 cards, "
+            "max 4 copies of any card, max 2 distinct ink colors across the deck. "
+            "Each entry is `{name: str, count: int}` where `name` is the card's "
+            "`full_name` (e.g. 'Mickey Mouse - Brave Little Tailor'). "
+            "Returns `{legal: bool, total_cards, inks, violations: [...]}`. "
+            "Violation types: `deck_size` (wrong total), `max_copies` (>4 of one card), "
+            "`ink_limit` (>2 distinct colors — also catches dual-ink cards adding a "
+            "forbidden third color), `unknown_card` (name didn't resolve to a known card). "
+            "If you have the output of `import_deck`, build the input as "
+            "`[{name: card.full_name, count: count}]` for each parsed entry."
+        )
+    )
+    def validate_deck(deck: list[dict[str, Any]]) -> dict[str, Any]:
+        return _validate_deck(_resolve_deck_entries(deck))
+
+    @mcp.tool(
+        description=(
+            "Compute summary stats for a Lorcana deck: ink curve (copies at each "
+            "cost), color split (copies per color — dual-ink contributes to BOTH "
+            "buckets, so the sum may exceed total_cards), inkable/uninkable counts, "
+            "and type breakdown (Character/Action/Item/Song/Location). "
+            "Each entry is `{name: str, count: int}` where `name` is the card's "
+            "`full_name`. Names that don't resolve are listed under `unresolved` "
+            "and excluded from the per-card stats (but still counted in total_cards)."
+        )
+    )
+    def deck_stats(deck: list[dict[str, Any]]) -> dict[str, Any]:
+        return _deck_stats(_resolve_deck_entries(deck))
 
     @mcp.tool(description="Show startup metadata for this server instance.")
     def server_status() -> dict[str, Any]:
