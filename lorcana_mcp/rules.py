@@ -1,6 +1,19 @@
-"""Disney Lorcana game rules for MCP server instructions."""
+"""Disney Lorcana game rules for MCP server instructions.
 
-LORCANA_RULES = """
+This module is the single source of truth for the Lorcana format constants
+(`LORCANA_MIN_DECK_SIZE`, `LORCANA_MAX_COPIES`, `LORCANA_MAX_INKS`). They are
+both interpolated into the LORCANA_RULES prompt and imported by deck.py for
+validation, so the prose the model reads and the rules the validator
+enforces stay in lockstep.
+"""
+
+from string import Template
+
+LORCANA_MIN_DECK_SIZE = 60
+LORCANA_MAX_COPIES = 4
+LORCANA_MAX_INKS = 2
+
+_LORCANA_RULES_TEMPLATE = Template("""
 ## Disney Lorcana Game Rules
 
 ### Win Condition
@@ -20,10 +33,10 @@ their decoded form** rather than echoing the raw symbol. Write "4 ink" not "4 {I
 "{E}", "3 strength" not "3 {S}". The braces are an internal data format; users shouldn't see them.
 
 ### Deck Building
-- Minimum 60 cards per deck. 60 is the standard size; there is no maximum, but
-  larger decks dilute the chance of drawing any specific card.
-- Maximum 4 copies of any card (matched by full name).
-- Maximum 2 ink colors per deck (Amber, Amethyst, Emerald, Ruby, Sapphire, Steel).
+- Minimum $min_deck_size cards per deck. $min_deck_size is the standard size; there is no
+  maximum, but larger decks dilute the chance of drawing any specific card.
+- Maximum $max_copies copies of any card (matched by full name).
+- Maximum $max_inks ink colors per deck (Amber, Amethyst, Emerald, Ruby, Sapphire, Steel).
 - **Dual-ink cards** (introduced in Set 7) have two ink colors. To include a dual-ink card in
   your deck, the deck MUST contain both of that card's colors. A dual-ink card cannot go in a
   deck that only uses one of its colors (e.g., a Ruby/Sapphire dual-ink card requires a
@@ -201,4 +214,10 @@ or effects that fire when a card is placed underneath). Boost costs vary (1, 2, 
 - **Classification traits:** Characters have classification traits (Storyborn, Dreamborn, Floodborn)
   that may be referenced by card abilities. Floodborn characters are typically the ones with the Shift
   keyword. These traits also appear in subtypes alongside character traits (Hero, Villain, Princess, etc.).
-""".strip()
+""")
+
+LORCANA_RULES = _LORCANA_RULES_TEMPLATE.substitute(
+    min_deck_size=LORCANA_MIN_DECK_SIZE,
+    max_copies=LORCANA_MAX_COPIES,
+    max_inks=LORCANA_MAX_INKS,
+).strip()
