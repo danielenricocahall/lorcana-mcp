@@ -177,7 +177,10 @@ participating character must be ready and not have summoning sickness.
 **Ward** - Cannot be targeted by opponent's abilities or effects. Does NOT prevent being challenged.
 AoE effects ("all characters") still affect Ward characters.
 
-**Vanish** - When banished in a challenge, returns to hand instead of going to discard.
+**Vanish** - When an opponent chooses this character as the target of an action, this character
+is banished. Typically appears on Illusion characters and is designed to punish opponent
+targeting (and to feed Illusion-tribal triggers that benefit from your characters being banished).
+The action that triggered Vanish can still resolve, but with no valid target it usually fizzles.
 
 **Boost N** - Once per turn, pay N ink to put the top card of your deck face-down under this character.
 The face-down card is not in play and cannot be looked at. Cards placed underneath typically enable
