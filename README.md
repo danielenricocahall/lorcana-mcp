@@ -214,13 +214,13 @@ Measured with `benchmarks/bench_toon.py` against the live ~2,270-card dataset (p
 
 | query | rows | JSON tokens | TOON tokens | Δ |
 |---|---:|---:|---:|---:|
-| `color="amber", limit=200` | 200 | 77,535 | 69,445 | **−10.4%** |
-| `color="ruby", limit=50` | 50 | 18,356 | 16,534 | **−9.9%** |
-| `card_type="action", limit=50` (sparse cols) | 50 | 18,069 | 16,344 | **−9.5%** |
-| `body_text="when", limit=50` (long full_text) | 50 | 20,773 | 18,539 | **−10.8%** |
-| `name="elsa", limit=20` | 14 | 7,220 | 6,201 | **−14.1%** |
-| **total** |  | **141,953** | **127,063** | **−10.5%** |
+| `color="amber", limit=200` | 200 | 43,672 | 39,282 | **−10.1%** |
+| `color="ruby", limit=50` | 50 | 10,446 | 9,464 | **−9.4%** |
+| `card_type="action", limit=50` (sparse cols) | 50 | 10,150 | 9,265 | **−8.7%** |
+| `body_text="when", limit=50` (long full_text) | 50 | 11,574 | 10,380 | **−10.3%** |
+| `name="elsa", limit=20` | 14 | 3,456 | 2,925 | **−15.4%** |
+| **total** |  | **79,298** | **71,316** | **−10.1%** |
 
-Note: TOON's relative savings are smaller than they were before the consolidation work (pre-PR-#29 the same queries showed ~50% reductions). The `printings` array is nested rather than tabular, so TOON's columnar wins on the top-level fields are partially offset by JSON-style encoding of the per-printing entries. Absolute token counts are also higher because each row now carries its alternate-printing metadata (set codes, rarities, image URLs).
+Note: TOON's relative savings are smaller here than they were before the printings consolidation (pre-PR-#29 the same queries showed ~50% reductions). That gap is structural to the nested `printings` array — TOON's columnar encoding wins on the top-level fields but falls back to JSON-style encoding inside the per-printing entries, so the array dilutes the relative gain. Absolute token counts are still down meaningfully versus the equivalent count of pre-consolidation rows since each unique card is now represented once with a small printings list rather than as 1-3 separate full rows.
 
 Reproduce with `PYTHONPATH=. uv run python benchmarks/bench_toon.py` (requires a populated `cards.json` cache).
