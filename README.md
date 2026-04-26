@@ -203,10 +203,23 @@ Once connected to an MCP client, you can ask natural language questions like:
 Example (`search_cards(name="elsa", limit=2, response_format="toon")`):
 
 ```
-cards[2]{id,name,version,full_name,cost,inkwell,...}:
-  1,Elsa,Spirit of Winter,Elsa - Spirit of Winter,5,false,...
-  2,Elsa,Snow Queen,Elsa - Snow Queen,8,true,...
+cards[2]:
+  - id: crd_01c4835a62df4960bb973aeff81f2bb2
+    name: Elsa
+    version: Ice Maker
+    full_name: Elsa - Ice Maker
+    cost: 7
+    ...
+    printings[3]{set_code,set_name,number,rarity}:
+      "7",Archazia's Island,69,Super Rare
+      C2,Lorcana Challenge Year 3,2,Promo
+      C2,Lorcana Challenge Year 3,6,Promo
+  - id: crd_04bca46a8e2d4e9ba0fbdbfc6c99e51e
+    name: Elsa
+    ...
 ```
+
+The outer `cards[2]:` falls back to YAML-style per-card blocks (rather than a single tabular table) because card shapes vary — Actions and Items don't carry strength/willpower/lore, for example. The inner `printings[N]{...}:` block is fully tabular since every printing has the same four fields.
 
 ### Benchmark
 

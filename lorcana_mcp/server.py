@@ -85,8 +85,9 @@ def create_server() -> FastMCP:
             "names a set in plain English so you don't have to look up the code first. "
             "Use offset to paginate through results (e.g. offset=20 for the next page). "
             "Use count_cards instead if you only need a total count. "
-            "Set response_format='toon' to receive a tabular TOON-encoded string instead of "
-            "JSON objects (~50% fewer tokens for large result sets); default is 'json'."
+            "Set response_format='toon' to receive a TOON-encoded string instead of JSON objects "
+            "(~10% fewer tokens; the printings array is nested so the savings are smaller than a "
+            "purely flat schema would yield); default is 'json'."
         )
     )
     def search_cards(
@@ -342,7 +343,7 @@ def create_server() -> FastMCP:
 
     @mcp.prompt(
         description=(
-            "Guide the user through building a legal 60-card Lorcana deck. "
+            "Guide the user through building a legal Lorcana deck (60-card minimum). "
             "Accepts preferred color(s) and playstyle, then uses the available "
             "search and aggregation tools to suggest a full deck list with synergy notes."
         )
@@ -360,6 +361,7 @@ keywords, and deck-building constraints.
 - Playstyle: {playstyle}
 
 ## Deck-Building Guidelines
+- Target 60 cards (60 is the minimum; larger decks dilute draw probability)
 - Aim for ~20 inkable cards to ensure consistent ink development each turn
 - When including dual-ink cards, ensure the deck uses both of that card's colors
 - Include Shift chains where possible: pick cheap base-name characters and their Floodborn Shift versions
@@ -370,22 +372,25 @@ keywords, and deck-building constraints.
 
 1. **Explore the card pool** — use `search_cards` filtered to the requested color(s) and card_type. \
 Valid card types: Character, Action, Item, Song, Location.
-2. **Build the curve** — target this distribution across 60 cards:
+2. **Build the curve** — target this distribution across the 60 cards:
    - Cost 1-2: 10-14 cards (early plays and ink fodder)
    - Cost 3-4: 16-20 cards (midgame)
    - Cost 5-6: 10-14 cards (late threats)
    - Cost 7+: 6-10 cards (finishers, use sparingly)
-3. **Find synergies** — use `top_traits` to identify strong trait clusters. Look for:
-   - Singer/Song pairs: characters with Singer can sing songs for free (body_text="Singer")
-   - Shift chains: cheap base characters + their Floodborn Shift versions for tempo advantage
-   - Keyword combos: Evasive (hard to remove), Bodyguard (protects key characters), Challenger (efficient removal)
+3. **Find synergies** — use `top_traits` to identify strong trait clusters and `keyword=...` to \
+find cards with specific abilities. Look for:
+   - Singer/Song pairs: characters with the Singer keyword (`keyword="Singer"`) can sing songs for free; \
+also remember any character whose own cost ≥ a song's cost can sing it without the keyword
+   - Shift chains: search `keyword="Shift"` for cheap base characters + their Floodborn Shift versions
+   - Keyword combos via `keyword=...`: Evasive (hard to remove), Bodyguard (protects key characters), \
+Challenger (efficient removal), Resist (damage soak), Ward (untargetable)
    - Location value: locations with lore passively generate lore each turn without needing to exert
    - Items with activated abilities: exert-based items for repeatable effects each turn
 4. **Adjust for playstyle**:
-   - aggressive: favor low-cost Characters with Rush or high attack, minimize cost 6+
-   - control: include removal (body_text="banish" or "damage"), Ward, and card draw
-   - lore-race: prioritize high lore values (min_lore=2), Evasive Characters, Locations with lore, \
-and Songs that quest
+   - aggressive: favor low-cost Characters with `keyword="Rush"` or high attack, minimize cost 6+
+   - control: include removal (body_text="banish" or "damage"), `keyword="Ward"`, and card draw
+   - lore-race: prioritize high lore values (min_lore=2), `keyword="Evasive"` Characters, Locations \
+with lore, and Songs that quest
    - balanced: even curve, mix of threats and support
 
 ## Output Format
