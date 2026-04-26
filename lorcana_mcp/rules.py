@@ -6,6 +6,19 @@ LORCANA_RULES = """
 ### Win Condition
 First player to reach 20 lore wins.
 
+### Card Text Symbols
+Card `full_text` strings use these symbols. Decode them when reading abilities:
+- `{E}` — exert (rotate the card sideways; marks it as used until your next Ready Step).
+  Used as a cost, e.g. `{E} —` means "exert this card to:".
+- `{I}` — ink (the resource paid from your inkwell). E.g. `2 {I}` means "pay 2 ink".
+- `{S}` — Strength.
+- `{L}` — Lore.
+- `{W}` — Willpower.
+
+When summarizing cards or quoting their text to a user, **always translate these symbols into
+their decoded form** rather than echoing the raw symbol. Write "4 ink" not "4 {I}", "exert" not
+"{E}", "3 strength" not "3 {S}". The braces are an internal data format; users shouldn't see them.
+
 ### Deck Building
 - Minimum 60 cards per deck. 60 is the standard size; there is no maximum, but
   larger decks dilute the chance of drawing any specific card.
@@ -29,7 +42,7 @@ First player to reach 20 lore wins.
 3. Draw Step - draw 1 card (first player skips this on turn 1).
 
 **Main Phase (any order, as many actions as able):**
-- Add one inkable card face-down to your inkwell (once per turn).
+- Optionally add one inkable card face-down to your inkwell (at most once per turn).
 - Play a card by exerting inkwell cards equal to its cost.
 - Quest with a ready character (exert to gain lore equal to its lore value).
 - Challenge with a ready character (exert to fight an opponent's exerted character).
@@ -39,6 +52,8 @@ First player to reach 20 lore wins.
 ### Ink System
 - Your inkwell is your resource pool. Only cards with the inkwell icon are inkable.
 - Exert inkwell cards to pay costs. They ready during your Ready Step.
+- Cards added to the inkwell are placed face-down and remain hidden — your opponent never sees
+  what you've inked.
 
 ### Summoning Sickness ("The Ink Is Drying")
 - Characters CANNOT quest, challenge, or use exert-based abilities on the turn they are played.
@@ -54,6 +69,7 @@ First player to reach 20 lore wins.
 ### Challenging
 - Exert a ready character to challenge an opponent's EXERTED character.
 - You can only challenge exerted characters (unless an ability says otherwise).
+- Locations can also be challenged at any time — see Card Types → Location for details.
 - Both characters deal simultaneous damage equal to their Strength.
 - Damage >= Willpower = banished (sent to discard pile).
 - Damage from abilities (e.g., "deal 2 damage to chosen character") also causes banishing at damage >= Willpower.
@@ -62,12 +78,26 @@ First player to reach 20 lore wins.
 ### Card Types
 
 **Character** - Has Strength, Willpower, and Lore. Can quest and challenge. Subject to summoning sickness.
-**Action** - One-time effect, then discarded.
-**Song** - Subtype of Action. Can be played normally OR sung for free by an eligible character (see Singer).
+**Action** - One-time effect, then discarded. Actions (including Songs) can only be played on
+  your own turn during your Main Phase. There is no per-turn limit on how many actions you can
+  play (unlike inking, which is once per turn).
+**Song** - Subtype of Action. Can be played by paying its ink cost normally OR sung for free by an
+  eligible character. **Singing eligibility (this is the rule that's easy to miss):**
+  - **Default rule (no keyword required):** ANY character whose own ink cost is greater than or
+    equal to the song's cost can exert to sing it for free. A 4-cost character can sing any song
+    costing 4 or less. A 5-cost character can sing any song costing 5 or less. Etc.
+  - **Singer N** (keyword) extends this: a character with `Singer N` can sing songs costing up to N
+    *regardless of the character's own cost* — useful on cheap characters.
+  - **Sing Together N** (keyword on the song itself): multiple of your characters can sing the song
+    together if their combined cost ≥ N.
+  - **Voiceless** (keyword) prevents a character from singing at all.
+  - In every case, the singing character(s) must be ready and not have summoning sickness.
+  **Bottom line:** the threshold for singing a song is the song's cost, not the presence of a
+  Singer keyword.
 **Item** - Stays in play. No summoning sickness. Cannot quest or challenge, and cannot be challenged.
   Items can have passive abilities or activated abilities that require exerting the item (e.g., "Exert
-  this item to give a character +1 lore this turn"). Items cannot be challenged at all — exerting an
-  item has no downside beyond the item being unavailable until your next Ready Step.
+  this item to give a character +1 lore this turn"). Exerting an item has no downside beyond the item
+  being unavailable until your next Ready Step.
 **Location** - Stays in play. Has Willpower, Lore, and a Move Cost.
   - Locations have NO ready/exerted state — they are always played horizontally and stay that way.
   - Locations passively gain lore equal to their lore value during the Set Step of your Beginning Phase
@@ -76,6 +106,41 @@ First player to reach 20 lore wins.
   - Opponents can challenge a location at any time (since locations are never "ready" to protect them).
     The attacker deals Strength damage but the location deals none back.
   - Location banished at damage >= Willpower; characters there remain in play but lose location bonuses.
+
+### Reading Card Text
+Card abilities follow a few common patterns. Decoding them correctly is more important than
+memorizing every keyword.
+
+**Triggered abilities** fire automatically when their condition is met. The controller of the
+ability resolves it (chooses targets, makes decisions).
+- *"When you play this character..."* — fires on entry to play. Every play of the card triggers
+  this; "play" is the only way cards enter play in Lorcana.
+- *"Whenever this character quests / challenges / is banished..."* — fires every time the
+  condition occurs.
+- *"At the start of your turn..."* — fires during your Set Step (see Beginning Phase).
+- *"At the end of your turn..."* — fires as your turn ends, before your opponent's turn begins.
+
+**Activated abilities** are written as `<cost> — <effect>` (often `{E} —` to exert, or
+`<N> {I} —` to pay ink). The controller pays the cost to fire the effect.
+
+**"Once during your turn"** (the canonical Lorcana phrasing; "once per turn" appears
+occasionally) means the activated ability can be used at most once each turn.
+
+**Targeting.** *"Chosen character/item/location"* means the controller of the ability picks a
+legal target. *"Chosen opposing character"* restricts the choice to the opponent's side.
+Targeting respects keywords like Ward (opponents can't target this card) and Evasive (only
+Evasive characters can challenge it).
+
+**Banish vs discard.** *Banish* sends a card from play to its owner's discard pile (the Lorcana
+term for "destroyed"). *Discard* most often refers to discarding from hand. Both physically end
+up in the same discard pile, but a trigger that fires on banishing does NOT fire on a hand
+discard, and vice versa.
+
+**Look at vs Reveal vs Search.**
+- *"Look at the top N cards of your deck"* — private to you. Often paired with a follow-up like
+  "Put one into your hand and the rest on the bottom in any order."
+- *"Reveal..."* — shown to all players.
+- *"Search your deck for..."* — find a specified card; the deck is then shuffled.
 
 ### Keywords
 
@@ -97,21 +162,32 @@ a Bodyguard if one is exerted.) If multiple Bodyguards are exerted, the opponent
 Name matching uses the base name only — any "Elsa" can shift onto any other "Elsa" regardless of
 subtitle/version. The shifted character inherits position (ready/exerted) and damage. If the base
 character was already in play from a prior turn, the shifted character is NOT subject to summoning
-sickness. Floodborn characters are the ones that typically have Shift.
+sickness. Named Shift variants relax the same-name requirement: **Universal Shift** lets you shift
+onto any character; **Puppy Shift** lets you shift onto any character with the Puppy trait.
+Otherwise variants behave like base Shift.
 
-**Singer N** - Can exert to sing (play for free) songs costing N ink or less, regardless of the character's
-own ink cost. The character must be ready and not have summoning sickness to sing. Note: any character
-with cost >= a song's cost can also sing it even without the Singer keyword, but the same restrictions
-apply — the character must be ready and not have summoning sickness.
+**Singer N** - Lets a character sing songs costing up to N regardless of the character's own cost
+(see Card Types → Song for the full singing rules, including the default rule that any character
+with cost ≥ the song's cost can sing it without needing the Singer keyword).
+
+**Sing Together N** - Keyword on the *song*. Any number of your (and your teammates', in multiplayer)
+characters whose combined cost is at least N may exert together to sing this song for free. Each
+participating character must be ready and not have summoning sickness.
 
 **Support** - When questing, may add this character's Strength to another chosen character until your next turn.
 
-**Voiceless** - Cannot sing songs at all.
+**Voiceless** - Character cannot sing songs at all (overrides the default singing rule and Singer N).
 
 **Ward** - Cannot be targeted by opponent's abilities or effects. Does NOT prevent being challenged.
 AoE effects ("all characters") still affect Ward characters.
 
-**Vanish** - When banished in a challenge, returns to hand instead of going to discard.
+**Vanish** - When an opponent chooses this character as the target of an action, this character
+is banished. Vanish is a **downside** on its bearer — opponent actions that target the card
+become free removal (even soft effects like "exert chosen character" banish it outright). Vanish
+cards typically carry above-rate stats or stronger-than-usual abilities to compensate for the
+drawback. Some Illusion-tribal builds turn the banish into upside via "when one of your
+characters is banished" triggers, but the default reading is "this card is easier for opponents
+to remove — play around opponent targeting."
 
 **Boost N** - Once per turn, pay N ink to put the top card of your deck face-down under this character.
 The face-down card is not in play and cannot be looked at. Cards placed underneath typically enable
