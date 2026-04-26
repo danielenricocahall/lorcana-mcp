@@ -48,6 +48,8 @@ Card `full_text` strings use these symbols. Decode them when reading abilities:
 ### Ink System
 - Your inkwell is your resource pool. Only cards with the inkwell icon are inkable.
 - Exert inkwell cards to pay costs. They ready during your Ready Step.
+- Cards added to the inkwell are placed face-down and remain hidden — your opponent never sees
+  what you've inked.
 
 ### Summoning Sickness ("The Ink Is Drying")
 - Characters CANNOT quest, challenge, or use exert-based abilities on the turn they are played.
@@ -72,7 +74,9 @@ Card `full_text` strings use these symbols. Decode them when reading abilities:
 ### Card Types
 
 **Character** - Has Strength, Willpower, and Lore. Can quest and challenge. Subject to summoning sickness.
-**Action** - One-time effect, then discarded.
+**Action** - One-time effect, then discarded. Actions (including Songs) can only be played on
+  your own turn during your Main Phase. There is no per-turn limit on how many actions you can
+  play (unlike inking, which is once per turn).
 **Song** - Subtype of Action. Can be played by paying its ink cost normally OR sung for free by an
   eligible character. **Singing eligibility (this is the rule that's easy to miss):**
   - **Default rule (no keyword required):** ANY character whose own ink cost is greater than or
@@ -98,6 +102,41 @@ Card `full_text` strings use these symbols. Decode them when reading abilities:
   - Opponents can challenge a location at any time (since locations are never "ready" to protect them).
     The attacker deals Strength damage but the location deals none back.
   - Location banished at damage >= Willpower; characters there remain in play but lose location bonuses.
+
+### Reading Card Text
+Card abilities follow a few common patterns. Decoding them correctly is more important than
+memorizing every keyword.
+
+**Triggered abilities** fire automatically when their condition is met. The controller of the
+ability resolves it (chooses targets, makes decisions).
+- *"When you play this character..."* — fires on entry to play. Every play of the card triggers
+  this; "play" is the only way cards enter play in Lorcana.
+- *"Whenever this character quests / challenges / is banished..."* — fires every time the
+  condition occurs.
+- *"At the start of your turn..."* — fires during your Set Step (see Beginning Phase).
+- *"At the end of your turn..."* — fires as your turn ends, before your opponent's turn begins.
+
+**Activated abilities** are written as `<cost> — <effect>` (often `{E} —` to exert, or
+`<N> {I} —` to pay ink). The controller pays the cost to fire the effect.
+
+**"Once during your turn"** (the canonical Lorcana phrasing; "once per turn" appears
+occasionally) means the activated ability can be used at most once each turn.
+
+**Targeting.** *"Chosen character/item/location"* means the controller of the ability picks a
+legal target. *"Chosen opposing character"* restricts the choice to the opponent's side.
+Targeting respects keywords like Ward (opponents can't target this card) and Evasive (only
+Evasive characters can challenge it).
+
+**Banish vs discard.** *Banish* sends a card from play to its owner's discard pile (the Lorcana
+term for "destroyed"). *Discard* most often refers to discarding from hand. Both physically end
+up in the same discard pile, but a trigger that fires on banishing does NOT fire on a hand
+discard, and vice versa.
+
+**Look at vs Reveal vs Search.**
+- *"Look at the top N cards of your deck"* — private to you. Often paired with a follow-up like
+  "Put one into your hand and the rest on the bottom in any order."
+- *"Reveal..."* — shown to all players.
+- *"Search your deck for..."* — find a specified card; the deck is then shuffled.
 
 ### Keywords
 
