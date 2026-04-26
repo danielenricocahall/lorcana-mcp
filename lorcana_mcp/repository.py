@@ -28,6 +28,7 @@ _SEARCH_FIELDS = frozenset(
         "lore",
         "rarity",
         "set_code",
+        "set_name",
         "subtypes",
     }
 )

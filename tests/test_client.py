@@ -100,7 +100,7 @@ DUAL_INK_RAW = {
 
 
 def test_normalize_character():
-    out = _normalize_card(CHARACTER_RAW, "Character")
+    out = _normalize_card(CHARACTER_RAW, "Character", {"set12": "Wilds Unknown"})
     assert out["id"] == 2716
     assert out["name"] == "Gosalyn Mallard"
     assert out["version"] == "The Quiverwing Quack"
@@ -115,11 +115,23 @@ def test_normalize_character():
     assert out["lore"] == 1
     assert out["rarity"] == "Common"
     assert out["set_code"] == "12"
+    assert out["set_name"] == "Wilds Unknown"
     assert out["number"] == 1
     assert out["story"] == "Darkwing Duck"
     assert out["subtypes"] == "Dreamborn • Super • Hero"
     assert out["artists"] == "Cam Kendell"
     assert out["full_identifier"] == "1/204 • EN • 12"
+
+
+def test_normalize_set_name_missing_when_lookup_omits_id():
+    out = _normalize_card(CHARACTER_RAW, "Character", {})
+    assert out["set_code"] == "12"
+    assert out["set_name"] is None
+
+
+def test_normalize_set_name_none_when_lookup_not_provided():
+    out = _normalize_card(CHARACTER_RAW, "Character")
+    assert out["set_name"] is None
 
 
 def test_normalize_strips_ability_markers_from_full_text():
@@ -176,14 +188,18 @@ def test_normalize_dual_ink_card_returns_both_colors():
     assert out["set_code"] == "7"
 
 
-def test_fetch_cards_flattens_buckets_and_assigns_types():
+def test_fetch_cards_flattens_buckets_and_assigns_types_and_set_names():
     catalog = {
         "cards": {
             "characters": [CHARACTER_RAW, DUAL_INK_RAW],
             "actions": [ACTION_RAW],
             "items": [],
             "locations": [LOCATION_RAW],
-        }
+        },
+        "card_sets": [
+            {"id": "set7", "name": "Archazia's Island"},
+            {"id": "set12", "name": "Wilds Unknown"},
+        ],
     }
     fake_response = MagicMock()
     fake_response.json.return_value = catalog
@@ -197,6 +213,11 @@ def test_fetch_cards_flattens_buckets_and_assigns_types():
     types = [c["type"] for c in cards]
     # Buckets are processed in order: characters, actions, items, locations.
     assert types == ["Character", "Character", "Action", "Location"]
+    # Set names are resolved from the catalog's card_sets entries.
+    by_id = {c["id"]: c for c in cards}
+    assert by_id[2716]["set_name"] == "Wilds Unknown"  # Gosalyn from set12
+    assert by_id[9999]["set_name"] == "Archazia's Island"  # dual-ink from set7
+    assert by_id[2743]["set_name"] == "Wilds Unknown"  # action from set12
 
 
 def test_fetch_cards_rejects_non_bucket_response():

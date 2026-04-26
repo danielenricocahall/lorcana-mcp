@@ -52,14 +52,16 @@ def _make_simple_name(full_name: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", full_name.lower())).strip()
 
 
-def _normalize_card(raw: dict[str, Any], card_type: str) -> dict[str, Any]:
+def _normalize_card(raw: dict[str, Any], card_type: str, set_lookup: dict[str, str] | None = None) -> dict[str, Any]:
     """Map a Ravensburger catalog entry to our internal schema columns."""
     name = (raw.get("name") or "").strip()
     subtitle = (raw.get("subtitle") or "").strip()
     full_name = f"{name} - {subtitle}" if subtitle else name
 
     card_sets = raw.get("card_sets") or []
-    set_code = card_sets[0].removeprefix("set") if card_sets else None
+    primary_set_id = card_sets[0] if card_sets else None
+    set_code = primary_set_id.removeprefix("set") if primary_set_id else None
+    set_name = (set_lookup or {}).get(primary_set_id) if primary_set_id else None
 
     card_identifier = raw.get("card_identifier")
     full_identifier = card_identifier.replace(" ", " • ") if card_identifier else None
@@ -91,6 +93,7 @@ def _normalize_card(raw: dict[str, Any], card_type: str) -> dict[str, Any]:
         "lore": raw.get("quest_value"),
         "artists": raw.get("author"),
         "set_code": set_code,
+        "set_name": set_name,
         "number": _parse_number(card_identifier),
         "rarity": rarity,
         "image_full": _pick_image(raw.get("variants") or []),
@@ -118,9 +121,11 @@ class LorcanaApiClient:
         if not isinstance(cards_section, dict):
             raise ValueError("Unexpected catalog format: 'cards' is not a bucket-grouped object.")
 
+        set_lookup = {entry["id"]: entry.get("name") for entry in catalog.get("card_sets") or [] if entry.get("id")}
+
         out: list[dict[str, Any]] = []
         for bucket, card_type in _BUCKET_TO_TYPE.items():
             for raw in cards_section.get(bucket) or []:
                 if isinstance(raw, dict):
-                    out.append(_normalize_card(raw, card_type))
+                    out.append(_normalize_card(raw, card_type, set_lookup))
         return out
