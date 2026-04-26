@@ -1,0 +1,64 @@
+name: Fetch Lorcana Cards
+
+on:
+  schedule:
+    # Daily at 06:00 UTC. Cron is best-effort on GitHub Actions; runs may be
+    # delayed during high load. Trigger manually via workflow_dispatch if needed.
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fetch-cards
+  cancel-in-progress: false
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: uv sync --no-dev
+
+      - name: Fetch card catalog
+        env:
+          RAVENSBURGER_BASIC_AUTH: ${{ secrets.RAVENSBURGER_BASIC_AUTH }}
+        run: uv run python data_pipeline/fetch_cards.py "${RUNNER_TEMP}/allCards.json"
+
+      - name: Publish to gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          # Bring gh-pages into a worktree so we don't disturb the source checkout.
+          mkdir -p "${RUNNER_TEMP}/gh-pages"
+          if git ls-remote --exit-code --heads origin gh-pages >/dev/null 2>&1; then
+            git fetch origin gh-pages --depth=1
+            git worktree add "${RUNNER_TEMP}/gh-pages" gh-pages
+          else
+            git worktree add --orphan -b gh-pages "${RUNNER_TEMP}/gh-pages"
+            (cd "${RUNNER_TEMP}/gh-pages" && git rm -rf . >/dev/null 2>&1 || true)
+          fi
+
+          cp "${RUNNER_TEMP}/allCards.json" "${RUNNER_TEMP}/gh-pages/allCards.json"
+
+          cd "${RUNNER_TEMP}/gh-pages"
+          if git diff --quiet -- allCards.json && ! git status --porcelain | grep -q '^?? allCards.json'; then
+            echo "No changes; skipping commit."
+            exit 0
+          fi
+          git add allCards.json
+          git commit -m "data: refresh card catalog $(date -u +%Y-%m-%dT%H:%MZ)"
+          git push origin gh-pages
