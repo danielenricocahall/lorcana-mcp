@@ -7,7 +7,8 @@ LORCANA_RULES = """
 First player to reach 20 lore wins.
 
 ### Deck Building
-- Exactly 60 cards per deck.
+- Minimum 60 cards per deck. 60 is the standard size; there is no maximum, but
+  larger decks dilute the chance of drawing any specific card.
 - Maximum 4 copies of any card (matched by full name).
 - Maximum 2 ink colors per deck (Amber, Amethyst, Emerald, Ruby, Sapphire, Steel).
 - **Dual-ink cards** (introduced in Set 7) have two ink colors. To include a dual-ink card in
