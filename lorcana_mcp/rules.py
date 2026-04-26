@@ -63,8 +63,7 @@ Card `full_text` strings use these symbols. Decode them when reading abilities:
 ### Challenging
 - Exert a ready character to challenge an opponent's EXERTED character.
 - You can only challenge exerted characters (unless an ability says otherwise).
-- You can also challenge a Location at any time (Locations have no ready/exerted state).
-  The attacker deals Strength damage; the location deals none back.
+- Locations can also be challenged at any time — see Card Types → Location for details.
 - Both characters deal simultaneous damage equal to their Strength.
 - Damage >= Willpower = banished (sent to discard pile).
 - Damage from abilities (e.g., "deal 2 damage to chosen character") also causes banishing at damage >= Willpower.
@@ -85,9 +84,8 @@ Card `full_text` strings use these symbols. Decode them when reading abilities:
     together if their combined cost ≥ N.
   - **Voiceless** (keyword) prevents a character from singing at all.
   - In every case, the singing character(s) must be ready and not have summoning sickness.
-  When deciding "can this song be sung in this deck?", the threshold is the song's cost — not the
-  presence of any Singer keyword. Even a deck with zero Singer characters can sing songs as long as
-  it has characters whose cost meets or exceeds the song's cost.
+  **Bottom line:** the threshold for singing a song is the song's cost, not the presence of a
+  Singer keyword.
 **Item** - Stays in play. No summoning sickness. Cannot quest or challenge, and cannot be challenged.
   Items can have passive abilities or activated abilities that require exerting the item (e.g., "Exert
   this item to give a character +1 lore this turn"). Items cannot be challenged at all — exerting an
@@ -121,9 +119,9 @@ a Bodyguard if one is exerted.) If multiple Bodyguards are exerted, the opponent
 Name matching uses the base name only — any "Elsa" can shift onto any other "Elsa" regardless of
 subtitle/version. The shifted character inherits position (ready/exerted) and damage. If the base
 character was already in play from a prior turn, the shifted character is NOT subject to summoning
-sickness. Floodborn characters are the ones that typically have Shift. Named Shift variants relax
-the same-name requirement: **Universal Shift** lets you shift onto any character; **Puppy Shift**
-lets you shift onto any character with the Puppy trait. Otherwise variants behave like base Shift.
+sickness. Named Shift variants relax the same-name requirement: **Universal Shift** lets you shift
+onto any character; **Puppy Shift** lets you shift onto any character with the Puppy trait.
+Otherwise variants behave like base Shift.
 
 **Singer N** - Lets a character sing songs costing up to N regardless of the character's own cost
 (see Card Types → Song for the full singing rules, including the default rule that any character
