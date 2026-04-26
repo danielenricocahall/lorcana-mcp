@@ -6,6 +6,15 @@ LORCANA_RULES = """
 ### Win Condition
 First player to reach 20 lore wins.
 
+### Card Text Symbols
+Card `full_text` strings use these symbols. Decode them when reading abilities:
+- `{E}` — exert (rotate the card sideways; marks it as used until your next Ready Step).
+  Used as a cost, e.g. `{E} —` means "exert this card to:".
+- `{I}` — ink (the resource paid from your inkwell). E.g. `2 {I}` means "pay 2 ink".
+- `{S}` — Strength.
+- `{L}` — Lore.
+- `{W}` — Willpower.
+
 ### Deck Building
 - Minimum 60 cards per deck. 60 is the standard size; there is no maximum, but
   larger decks dilute the chance of drawing any specific card.
@@ -54,6 +63,8 @@ First player to reach 20 lore wins.
 ### Challenging
 - Exert a ready character to challenge an opponent's EXERTED character.
 - You can only challenge exerted characters (unless an ability says otherwise).
+- You can also challenge a Location at any time (Locations have no ready/exerted state).
+  The attacker deals Strength damage; the location deals none back.
 - Both characters deal simultaneous damage equal to their Strength.
 - Damage >= Willpower = banished (sent to discard pile).
 - Damage from abilities (e.g., "deal 2 damage to chosen character") also causes banishing at damage >= Willpower.
@@ -63,7 +74,20 @@ First player to reach 20 lore wins.
 
 **Character** - Has Strength, Willpower, and Lore. Can quest and challenge. Subject to summoning sickness.
 **Action** - One-time effect, then discarded.
-**Song** - Subtype of Action. Can be played normally OR sung for free by an eligible character (see Singer).
+**Song** - Subtype of Action. Can be played by paying its ink cost normally OR sung for free by an
+  eligible character. **Singing eligibility (this is the rule that's easy to miss):**
+  - **Default rule (no keyword required):** ANY character whose own ink cost is greater than or
+    equal to the song's cost can exert to sing it for free. A 4-cost character can sing any song
+    costing 4 or less. A 5-cost character can sing any song costing 5 or less. Etc.
+  - **Singer N** (keyword) extends this: a character with `Singer N` can sing songs costing up to N
+    *regardless of the character's own cost* — useful on cheap characters.
+  - **Sing Together N** (keyword on the song itself): multiple of your characters can sing the song
+    together if their combined cost ≥ N.
+  - **Voiceless** (keyword) prevents a character from singing at all.
+  - In every case, the singing character(s) must be ready and not have summoning sickness.
+  When deciding "can this song be sung in this deck?", the threshold is the song's cost — not the
+  presence of any Singer keyword. Even a deck with zero Singer characters can sing songs as long as
+  it has characters whose cost meets or exceeds the song's cost.
 **Item** - Stays in play. No summoning sickness. Cannot quest or challenge, and cannot be challenged.
   Items can have passive abilities or activated abilities that require exerting the item (e.g., "Exert
   this item to give a character +1 lore this turn"). Items cannot be challenged at all — exerting an
@@ -97,16 +121,21 @@ a Bodyguard if one is exerted.) If multiple Bodyguards are exerted, the opponent
 Name matching uses the base name only — any "Elsa" can shift onto any other "Elsa" regardless of
 subtitle/version. The shifted character inherits position (ready/exerted) and damage. If the base
 character was already in play from a prior turn, the shifted character is NOT subject to summoning
-sickness. Floodborn characters are the ones that typically have Shift.
+sickness. Floodborn characters are the ones that typically have Shift. Named Shift variants relax
+the same-name requirement: **Universal Shift** lets you shift onto any character; **Puppy Shift**
+lets you shift onto any character with the Puppy trait. Otherwise variants behave like base Shift.
 
-**Singer N** - Can exert to sing (play for free) songs costing N ink or less, regardless of the character's
-own ink cost. The character must be ready and not have summoning sickness to sing. Note: any character
-with cost >= a song's cost can also sing it even without the Singer keyword, but the same restrictions
-apply — the character must be ready and not have summoning sickness.
+**Singer N** - Lets a character sing songs costing up to N regardless of the character's own cost
+(see Card Types → Song for the full singing rules, including the default rule that any character
+with cost ≥ the song's cost can sing it without needing the Singer keyword).
+
+**Sing Together N** - Keyword on the *song*. Any number of your (and your teammates', in multiplayer)
+characters whose combined cost is at least N may exert together to sing this song for free. Each
+participating character must be ready and not have summoning sickness.
 
 **Support** - When questing, may add this character's Strength to another chosen character until your next turn.
 
-**Voiceless** - Cannot sing songs at all.
+**Voiceless** - Character cannot sing songs at all (overrides the default singing rule and Singer N).
 
 **Ward** - Cannot be targeted by opponent's abilities or effects. Does NOT prevent being challenged.
 AoE effects ("all characters") still affect Ward characters.
