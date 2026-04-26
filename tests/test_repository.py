@@ -294,3 +294,92 @@ def test_legacy_cards_without_printings_array_still_work(repo):
     assert len(repo.search(set_code="1")) == 2  # Mickey + Let It Go
     assert len(repo.search(rarity="Legendary")) == 1  # Elsa
     assert repo.count_by("rarity") == {"Common": 2, "Legendary": 1, "Rare": 2}
+
+
+# ---- structured keyword filter ----
+
+
+CARDS_WITH_ABILITIES = [
+    {
+        "id": "kw_1",
+        "name": "Stitch",
+        "full_name": "Stitch - Carefree Surfer",
+        "cost": 3,
+        "color": ["Ruby"],
+        "type": "Character",
+        "abilities": [{"name": "Evasive"}, {"name": "Rush"}],
+    },
+    {
+        "id": "kw_2",
+        "name": "Mickey Mouse",
+        "full_name": "Mickey Mouse - Brave Little Tailor",
+        "cost": 8,
+        "color": ["Amber"],
+        "type": "Character",
+        "abilities": [{"name": "Bodyguard"}],
+    },
+    {
+        "id": "kw_3",
+        "name": "Sven",
+        "full_name": "Sven - Reindeer Steed",
+        "cost": 5,
+        "color": ["Amber"],
+        "type": "Character",
+        "abilities": [{"name": "Rush"}, {"name": "Bodyguard"}],
+    },
+    {
+        "id": "kw_4",
+        "name": "Vanilla Card",
+        "full_name": "Vanilla Card",
+        "cost": 1,
+        "color": ["Steel"],
+        "type": "Action",
+        "abilities": [],
+    },
+]
+
+
+@pytest.fixture
+def repo_keywords():
+    r = InMemoryCardRepository()
+    r.load_cards(CARDS_WITH_ABILITIES)
+    return r
+
+
+def test_keyword_filter_matches_cards_with_that_ability(repo_keywords):
+    rush = repo_keywords.search(keyword="Rush")
+    assert {c["full_name"] for c in rush} == {"Stitch - Carefree Surfer", "Sven - Reindeer Steed"}
+
+    bodyguard = repo_keywords.search(keyword="Bodyguard")
+    assert {c["full_name"] for c in bodyguard} == {
+        "Mickey Mouse - Brave Little Tailor",
+        "Sven - Reindeer Steed",
+    }
+
+    # Vanilla card with no abilities never matches.
+    for kw in ("Rush", "Bodyguard", "Evasive"):
+        assert "Vanilla Card" not in {c["full_name"] for c in repo_keywords.search(keyword=kw)}
+
+
+def test_keyword_filter_is_case_insensitive(repo_keywords):
+    # "evasive", "EVASIVE", "Evasive" should all hit the same card.
+    expected = {"Stitch - Carefree Surfer"}
+    for variant in ("Evasive", "evasive", "EVASIVE", "  Evasive  "):
+        assert {c["full_name"] for c in repo_keywords.search(keyword=variant)} == expected
+
+
+def test_keyword_filter_no_matches_returns_empty(repo_keywords):
+    assert repo_keywords.search(keyword="Reckless") == []
+
+
+def test_count_with_keyword_matches_search(repo_keywords):
+    assert repo_keywords.count(keyword="Rush") == 2
+    assert repo_keywords.count(keyword="Bodyguard") == 2
+    assert repo_keywords.count(keyword="Evasive") == 1
+    assert repo_keywords.count(keyword="Reckless") == 0
+
+
+def test_keyword_combines_with_other_filters(repo_keywords):
+    # Rush characters in Amber: just Sven (Stitch is Ruby).
+    results = repo_keywords.search(keyword="Rush", color="amber")
+    assert {c["full_name"] for c in results} == {"Sven - Reindeer Steed"}

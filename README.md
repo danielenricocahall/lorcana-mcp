@@ -179,7 +179,7 @@ Once connected to an MCP client, you can ask natural language questions like:
 - "Find cheap (cost 2-3) characters with high strength (4+) in steel"
 - "How many cards in set 1 have Evasive and cost less than 4?"
 
-> **Note:** Keyword searches like `Evasive`, `Singer 5`, or `Reckless` match against the `full_text` field and work reliably since keywords appear verbatim in card text.
+> **Note:** For plain keyword queries (Evasive, Bodyguard, Shift, etc.) use the `keyword` parameter — it filters against the structured ability list and is more reliable than substring search. For value-specific queries like `Singer 5` or `Resist +2`, use `body_text` (keyword values live in the card's full text, not the ability list).
 
 ## MCP tools
 - `search_cards` — filter and retrieve card objects (supports `response_format="toon"` for ~50% fewer tokens)

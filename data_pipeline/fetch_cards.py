@@ -129,9 +129,11 @@ def normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
     subtypes = " • ".join(classifications) if classifications else None
 
     # Lorcast pre-extracts keywords (e.g. ["Shift", "Evasive"]). Map to the same
-    # `[{"name": kw}]` shape our existing schema uses.
+    # `[{"name": kw}]` shape our existing schema uses. Lorcast's casing is
+    # inconsistent in the wild (`Shift` vs `shift`, `Bodyguard` vs `bodyguard`);
+    # title-case to give the repository a single canonical form to filter against.
     keywords = raw.get("keywords") or []
-    abilities = [{"name": str(k)} for k in keywords]
+    abilities = [{"name": str(k).strip().title()} for k in keywords if str(k).strip()]
 
     illustrators = raw.get("illustrators") or []
     artists = ", ".join(illustrators) if illustrators else None

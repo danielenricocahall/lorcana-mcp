@@ -147,6 +147,22 @@ def test_normalize_keywords_become_abilities_entries():
     assert out["abilities"] == [{"name": "Evasive"}, {"name": "Rush"}]
 
 
+def test_normalize_keyword_casing_is_canonicalized():
+    # Lorcast occasionally emits lowercase keywords ("shift", "bodyguard")
+    # alongside the proper-cased forms. Title-case at pipeline time so the
+    # repository sees a single canonical name to filter against.
+    out = normalize_card({**KEYWORDS_RAW, "keywords": ["shift", "EVASIVE", "bodyguard", "Sing Together"]})
+    assert out["abilities"] == [
+        {"name": "Shift"},
+        {"name": "Evasive"},
+        {"name": "Bodyguard"},
+        {"name": "Sing Together"},
+    ]
+    # Whitespace and empty entries are dropped.
+    out = normalize_card({**KEYWORDS_RAW, "keywords": ["  Rush  ", "", "  "]})
+    assert out["abilities"] == [{"name": "Rush"}]
+
+
 def test_normalize_handles_missing_optional_fields():
     minimal = {
         "id": "crd_min",

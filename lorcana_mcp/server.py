@@ -71,7 +71,11 @@ def create_server() -> FastMCP:
             "Use card_type to filter by card type: Character, Action, Item, Song, or Location. "
             "Use min_attack/max_attack and min_defence/max_defence for stat-based queries "
             "(e.g. 'characters with 4+ strength'). Use min_cost/max_cost for cost ranges. "
-            "Use body_text to search card ability text (e.g. 'Evasive', 'Singer', 'Reckless'). "
+            "Use keyword to filter by Lorcana keyword (Bodyguard, Challenger, Evasive, Reckless, "
+            "Resist, Rush, Shift, Singer, Sing Together, Support, Vanish, Voiceless, Ward, etc.) — "
+            "matches against the structured ability list, more reliable than substring search. "
+            "Use body_text to search card ability text — useful for value-specific keyword queries "
+            "like 'Singer 5' or 'Resist +2', or for non-keyword phrases like 'gain 2 lore'. "
             "Use lore/min_lore/max_lore to filter by lore value. "
             "Use sort_by to order results (id, name, cost, strength, willpower, lore, rarity, set_code); "
             "use sort_order='asc' or 'desc'. "
@@ -101,6 +105,7 @@ def create_server() -> FastMCP:
         min_lore: int | None = None,
         max_lore: int | None = None,
         card_type: str | None = None,
+        keyword: str | None = None,
         limit: int = 20,
         offset: int = 0,
         sort_by: str = "id",
@@ -126,6 +131,7 @@ def create_server() -> FastMCP:
             min_lore=min_lore,
             max_lore=max_lore,
             card_type=card_type,
+            keyword=keyword,
             limit=limit,
             offset=offset,
             sort_by=sort_by,
@@ -138,9 +144,13 @@ def create_server() -> FastMCP:
     @mcp.tool(
         description=(
             "Count cards matching the given filters. Use this for questions like "
-            "'how many ruby cards are there?' or 'how many legendary inkwell cards cost 3?'. "
+            "'how many ruby cards are there?' or 'how many evasive characters?'. "
             "Supports stat ranges: min_attack/max_attack, min_defence/max_defence, min_cost/max_cost. "
-            "Use body_text to match card ability text (e.g. 'Singer 5', 'Evasive', 'Reckless'). "
+            "Use keyword to filter by Lorcana keyword (Bodyguard, Challenger, Evasive, Reckless, "
+            "Resist, Rush, Shift, Singer, Sing Together, Support, Vanish, Voiceless, Ward, etc.) — "
+            "matches against the structured ability list. "
+            "Use body_text for value-specific keyword queries like 'Singer 5' or 'Resist +2', or "
+            "for non-keyword phrases like 'gain 2 lore'. "
             "Use lore/min_lore/max_lore to filter by lore value. "
             "Use card_type to filter by card type: Character, Action, Item, Song, or Location. "
             "Use set_code to filter by set number (e.g. '1' for The First Chapter). "
@@ -166,6 +176,7 @@ def create_server() -> FastMCP:
         min_lore: int | None = None,
         max_lore: int | None = None,
         card_type: str | None = None,
+        keyword: str | None = None,
     ) -> int:
         return repository.count(
             name=name,
@@ -186,6 +197,7 @@ def create_server() -> FastMCP:
             min_lore=min_lore,
             max_lore=max_lore,
             card_type=card_type,
+            keyword=keyword,
         )
 
     _AGGREGABLE_FIELDS = {"cost", "rarity", "color", "set_code", "type"}
