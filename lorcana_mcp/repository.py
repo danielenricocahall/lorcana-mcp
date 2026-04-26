@@ -10,8 +10,6 @@ from functools import reduce
 from pathlib import Path
 from typing import Any
 
-_JSON_COLUMNS = {"abilities"}
-
 _SEARCH_FIELDS = frozenset(
     {
         "id",
@@ -37,10 +35,6 @@ _SEARCH_FIELDS = frozenset(
 
 def _slim_card(card: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in card.items() if k in _SEARCH_FIELDS}
-
-
-def _contains_case_insensitive(value: Any, search: str) -> bool:
-    return search.lower() in str(value or "").lower()
 
 
 def _parse_listish(value: Any) -> list[str]:
