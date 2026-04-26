@@ -38,7 +38,7 @@ Card `full_text` strings use these symbols. Decode them when reading abilities:
 3. Draw Step - draw 1 card (first player skips this on turn 1).
 
 **Main Phase (any order, as many actions as able):**
-- Add one inkable card face-down to your inkwell (once per turn).
+- Optionally add one inkable card face-down to your inkwell (at most once per turn).
 - Play a card by exerting inkwell cards equal to its cost.
 - Quest with a ready character (exert to gain lore equal to its lore value).
 - Challenge with a ready character (exert to fight an opponent's exerted character).
