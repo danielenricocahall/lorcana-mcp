@@ -29,6 +29,7 @@ _SEARCH_FIELDS = frozenset(
         "rarity",
         "set_code",
         "set_name",
+        "story",
         "subtypes",
     }
 )
@@ -100,6 +101,7 @@ class CardRepository(ABC):
         min_lore: int | None = None,
         max_lore: int | None = None,
         card_type: str | None = None,
+        story: str | None = None,
         limit: int = 20,
         offset: int = 0,
         sort_by: str = "id",
@@ -169,6 +171,7 @@ class CardRepository(ABC):
         min_lore: int | None = None,
         max_lore: int | None = None,
         card_type: str | None = None,
+        story: str | None = None,
     ) -> int:
         raise NotImplementedError
 
@@ -222,6 +225,7 @@ class InMemoryCardRepository(CardRepository):
         min_lore: int | None,
         max_lore: int | None,
         card_type: str | None,
+        story: str | None,
     ) -> Iterable[dict[str, Any]]:
         filter_clauses = []
         if name:
@@ -263,6 +267,8 @@ class InMemoryCardRepository(CardRepository):
             filter_clauses.append(lambda c: c.get("lore") is not None and c["lore"] <= int(max_lore))
         if card_type:
             filter_clauses.append(lambda c: card_type.lower() in (c.get("type") or "").lower())
+        if story:
+            filter_clauses.append(lambda c: story.lower() in (c.get("story") or "").lower())
         if not filter_clauses:
             return iter(cards)
         return reduce(lambda items, f: filter(f, items), filter_clauses, cards)
@@ -295,6 +301,7 @@ class InMemoryCardRepository(CardRepository):
         min_lore: int | None = None,
         max_lore: int | None = None,
         card_type: str | None = None,
+        story: str | None = None,
         limit: int = 20,
         offset: int = 0,
         sort_by: str = "id",
@@ -323,6 +330,7 @@ class InMemoryCardRepository(CardRepository):
             min_lore=min_lore,
             max_lore=max_lore,
             card_type=card_type,
+            story=story,
         )
         results = list(results)
         results = self._sort(results, sort_field, reverse=sort_order.lower() == "desc")
@@ -349,6 +357,7 @@ class InMemoryCardRepository(CardRepository):
         min_lore: int | None = None,
         max_lore: int | None = None,
         card_type: str | None = None,
+        story: str | None = None,
     ) -> int:
         return sum(
             1
@@ -372,6 +381,7 @@ class InMemoryCardRepository(CardRepository):
                 min_lore=min_lore,
                 max_lore=max_lore,
                 card_type=card_type,
+                story=story,
             )
         )
 
