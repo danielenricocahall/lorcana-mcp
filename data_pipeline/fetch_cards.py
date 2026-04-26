@@ -1,100 +1,209 @@
-"""Fetch the Ravensburger Lorcana card catalog and write it to disk.
+"""Fetch the Lorcana card catalog from Lorcast and write a normalized list to disk.
 
-Intended to run as a scheduled GitHub Actions job, not from inside the
-shipped MCP container. The Basic-auth client credential is read from the
-``RAVENSBURGER_BASIC_AUTH`` environment variable so it never lives in
-source. The script writes the raw catalog JSON (the same shape the
-official app sees) to the path passed on the CLI.
+Intended to run as a scheduled GitHub Actions job, not from inside the shipped
+MCP container. Lorcast's API is public and unauthenticated; no secrets needed.
+
+The output JSON is a flat list of cards in our internal schema (the shape the
+runtime repository consumes directly), so the runtime never needs to do any
+schema mapping — it just `requests.get` + `.json()` and loads the list into
+memory.
 """
 
 from __future__ import annotations
 
+import argparse
 import json
 import logging
-import os
+import re
 import sys
+import time
+from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import requests
 
-UNITY_VERSION = "6000.0.66f2"
-TOKEN_URL = "https://sso.ravensburger.de/token"
-CATALOG_URL = "https://api.lorcana.ravensburger.com/v3/catalog/en"
-DEFAULT_HEADERS = {"user-agent": "Lorcana/2026.2", "x-unity-version": UNITY_VERSION}
+BASE_URL = "https://api.lorcast.com/v0"
+REQUEST_DELAY_SECONDS = 0.12  # Lorcast asks for ~50–100ms; this is slightly conservative.
+TIMEOUT_SECONDS = 30
+HEADERS = {
+    "Accept": "application/json",
+    "User-Agent": "lorcana-mcp/data-pipeline (+https://github.com/danielenricocahall/lorcana-mcp)",
+}
 
 logger = logging.getLogger("fetch_cards")
 
 
-def _retrieve(url: str, headers: dict[str, str], max_attempts: int = 5) -> requests.Response:
+def _get_json(url: str, max_attempts: int = 5) -> dict[str, Any]:
+    """GET a URL with retry handling for 429s and 5xx responses."""
     last_error: str | None = None
-    for attempt in range(1, max_attempts + 1):
-        try:
-            response = requests.get(url, headers=headers, timeout=10)
-            if response.status_code == 200:
-                logger.debug("GET %s succeeded on attempt %d", url, attempt)
-                return response
+    for attempt in range(max_attempts):
+        response = requests.get(url, headers=HEADERS, timeout=TIMEOUT_SECONDS)
+
+        if response.status_code == 429:
+            retry_after = response.headers.get("Retry-After")
+            sleep_for = float(retry_after) if retry_after else 2**attempt
+            logger.warning("Rate limited at %s; sleeping %.1fs", url, sleep_for)
+            time.sleep(sleep_for)
+            continue
+
+        if 500 <= response.status_code < 600:
+            sleep_for = 2**attempt
             last_error = f"status {response.status_code}"
-        except (requests.exceptions.SSLError, requests.exceptions.Timeout) as exc:
-            last_error = type(exc).__name__
-            logger.debug("GET %s failed on attempt %d: %s", url, attempt, last_error)
+            logger.warning("Server error %s at %s; retrying in %ds", response.status_code, url, sleep_for)
+            time.sleep(sleep_for)
+            continue
+
+        response.raise_for_status()
+        return response.json()
+
     raise RuntimeError(f"GET {url} failed after {max_attempts} attempts (last error: {last_error})")
 
 
-def _get_token(basic_auth: str) -> str:
-    response = requests.post(
-        TOKEN_URL,
-        headers={
-            "authorization": f"Basic {basic_auth}",
-            "content-type": "application/x-www-form-urlencoded",
-            "user-agent": f"UnityPlayer/{UNITY_VERSION} (UnityWebRequest/1.0, libcurl/8.10.1-DEV)",
-            "x-unity-version": UNITY_VERSION,
-        },
-        data={"grant_type": "client_credentials"},
-        timeout=10,
-    )
-    if response.status_code != 200:
-        raise RuntimeError(f"Token request failed (status {response.status_code}): {response.text}")
-    payload = response.json()
-    if "access_token" not in payload or "token_type" not in payload:
-        raise RuntimeError(f"Token response missing fields: {response.text}")
-    return f"{payload['token_type']} {payload['access_token']}"
+def fetch_sets() -> list[dict[str, Any]]:
+    data = _get_json(f"{BASE_URL}/sets")
+    results = data.get("results")
+    if not isinstance(results, list):
+        raise ValueError(f"Unexpected /sets response shape: {data!r}")
+    return results
 
 
-def fetch_catalog(basic_auth: str) -> dict[str, Any]:
-    auth_header = _get_token(basic_auth)
-    headers = {**DEFAULT_HEADERS, "authorization": auth_header}
-    response = _retrieve(CATALOG_URL, headers=headers)
-    catalog = response.json()
-    if "cards" not in catalog:
-        raise RuntimeError(f"Catalog response missing 'cards' field: {response.text[:500]}")
-    return catalog
+def fetch_cards_for_set(set_code: str) -> list[dict[str, Any]]:
+    """Fetch all printings for a set. `unique=prints` returns individual printings."""
+    query = quote(f"set:{set_code}")
+    data = _get_json(f"{BASE_URL}/cards/search?q={query}&unique=prints")
+    results = data.get("results")
+    if not isinstance(results, list):
+        raise ValueError(f"Unexpected /cards/search response shape for set {set_code}: {data!r}")
+    return results
+
+
+def _make_simple_name(full_name: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"[^\w\s]", " ", full_name.lower())).strip()
+
+
+def _safe_int(value: Any) -> int | None:
+    try:
+        return int(value)
+    except TypeError, ValueError:
+        return None
+
+
+def normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
+    """Map a Lorcast catalog entry to our internal schema columns.
+
+    Output shape matches what `lorcana_mcp.repository.InMemoryCardRepository` expects.
+    Single source of truth for the field set is `_SEARCH_FIELDS` in that module.
+    """
+    name = (raw.get("name") or "").strip()
+    version = (raw.get("version") or "").strip() or None
+    full_name = f"{name} - {version}" if version else name
+
+    # `inks` (list) is populated for Set 7+ cards (where dual-ink became possible).
+    # `ink` (singular) is the legacy field, always set on pre-Set 7 cards. For
+    # dual-ink cards, `ink` is sometimes null while `inks` carries both colors.
+    inks = raw.get("inks")
+    ink = raw.get("ink")
+    if inks:
+        color = list(inks)
+    elif ink:
+        color = [ink]
+    else:
+        color = []
+
+    # Lorcast's `type` is a list. For Songs it's typically ["Action", "Song"]; we
+    # join with " • " so substring filters (`card_type="song"` or
+    # `card_type="action"`) both match Songs correctly.
+    type_list = raw.get("type") or []
+    type_str = " • ".join(type_list) if type_list else None
+
+    classifications = raw.get("classifications") or []
+    subtypes = " • ".join(classifications) if classifications else None
+
+    # Lorcast pre-extracts keywords (e.g. ["Shift", "Evasive"]). Map to the same
+    # `[{"name": kw}]` shape our existing schema uses.
+    keywords = raw.get("keywords") or []
+    abilities = [{"name": str(k)} for k in keywords]
+
+    illustrators = raw.get("illustrators") or []
+    artists = ", ".join(illustrators) if illustrators else None
+
+    set_obj = raw.get("set") or {}
+    set_code = set_obj.get("code")
+    set_name = set_obj.get("name")
+
+    images = ((raw.get("image_uris") or {}).get("digital")) or {}
+    image_full = images.get("large") or images.get("normal")
+    image_thumbnail = images.get("small") or images.get("normal")
+
+    collector_number = raw.get("collector_number")
+    full_identifier = f"{collector_number} • {set_code}" if collector_number and set_code else None
+
+    return {
+        "id": raw.get("id"),
+        "name": name or None,
+        "version": version,
+        "full_name": full_name or None,
+        "simple_name": _make_simple_name(full_name) or None,
+        "cost": raw.get("cost"),
+        "inkwell": raw.get("inkwell"),
+        "strength": raw.get("strength"),
+        "willpower": raw.get("willpower"),
+        "color": color,
+        "type": type_str,
+        "full_text": raw.get("text"),
+        "flavor_text": raw.get("flavor_text") or None,
+        "lore": raw.get("lore"),
+        "artists": artists,
+        "set_code": set_code,
+        "set_name": set_name,
+        "number": _safe_int(collector_number),
+        "rarity": raw.get("rarity"),
+        "image_full": image_full,
+        "image_thumbnail": image_thumbnail,
+        "subtypes": subtypes,
+        "abilities": abilities,
+        "full_identifier": full_identifier,
+    }
+
+
+def _card_dedupe_key(raw: dict[str, Any]) -> str:
+    if raw.get("id"):
+        return str(raw["id"])
+    set_obj = raw.get("set") or {}
+    return f"{set_obj.get('code', '')}|{raw.get('collector_number', '')}|{raw.get('name', '')}|{raw.get('version', '')}"
+
+
+def fetch_all_normalized_cards() -> list[dict[str, Any]]:
+    sets = fetch_sets()
+    seen: dict[str, dict[str, Any]] = {}
+
+    for i, set_obj in enumerate(sets, start=1):
+        code = str(set_obj.get("code") or "")
+        name = set_obj.get("name", code)
+        if not code:
+            logger.warning("Skipping set with no code: %r", set_obj)
+            continue
+
+        logger.info("[%d/%d] Fetching set %s: %s", i, len(sets), code, name)
+        for raw in fetch_cards_for_set(code):
+            seen[_card_dedupe_key(raw)] = raw
+
+        time.sleep(REQUEST_DELAY_SECONDS)
+
+    return [normalize_card(raw) for raw in seen.values()]
 
 
 def main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("output_path", help="Path to write the normalized cards JSON list")
+    args = parser.parse_args(argv[1:])
+
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
-    if len(argv) != 2:
-        print("usage: fetch_cards.py <output-path>", file=sys.stderr)
-        return 2
-    output_path = argv[1]
 
-    basic_auth = os.environ.get("RAVENSBURGER_BASIC_AUTH")
-    if not basic_auth:
-        print("RAVENSBURGER_BASIC_AUTH environment variable is required", file=sys.stderr)
-        return 2
-
-    catalog = fetch_catalog(basic_auth)
-    with open(output_path, "w", encoding="utf-8") as fh:
-        json.dump(catalog, fh, ensure_ascii=False, indent=2, sort_keys=True)
-        fh.write("\n")
-
-    # The catalog groups cards under buckets like actions / characters / items / locations,
-    # so sum across the buckets for an accurate count.
-    cards_section = catalog.get("cards", {})
-    if isinstance(cards_section, dict):
-        total = sum(len(v) for v in cards_section.values() if isinstance(v, list))
-    else:
-        total = len(cards_section)
-    logger.info("Wrote %d cards to %s (catalog_hash=%s)", total, output_path, catalog.get("catalog_hash"))
+    cards = fetch_all_normalized_cards()
+    Path(args.output_path).write_text(json.dumps(cards, ensure_ascii=False), encoding="utf-8")
+    logger.info("Wrote %d normalized cards to %s", len(cards), args.output_path)
     return 0
 
 

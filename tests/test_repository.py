@@ -30,7 +30,6 @@ SAMPLE_CARDS = [
         "willpower": 3,
         "lore": 1,
         "full_text": "Evasive",
-        "story": "Mickey & Friends",
     },
     {
         "id": 2,
@@ -49,7 +48,6 @@ SAMPLE_CARDS = [
         "willpower": 4,
         "lore": 3,
         "full_text": "Ward",
-        "story": "Frozen",
     },
     {
         "id": 3,
@@ -68,7 +66,6 @@ SAMPLE_CARDS = [
         "willpower": 2,
         "lore": 1,
         "full_text": None,
-        "story": "Frozen",
     },
     {
         "id": 4,
@@ -87,7 +84,6 @@ SAMPLE_CARDS = [
         "willpower": None,
         "lore": 0,
         "full_text": "Each opponent loses 2 lore.",
-        "story": "Frozen",
     },
     {
         "id": 5,
@@ -106,7 +102,6 @@ SAMPLE_CARDS = [
         "willpower": 4,
         "lore": 2,
         "full_text": "Bond of Loyalty",
-        "story": "101 Dalmatians",
     },
 ]
 
@@ -181,26 +176,6 @@ def test_search_card_type_filter(repo):
     assert actions[0]["name"] == "Let It Go"
 
     assert len(repo.search(card_type="Character")) == 4
-
-
-def test_search_story_filter_is_case_insensitive_substring(repo):
-    frozen = repo.search(story="Frozen")
-    assert {c["id"] for c in frozen} == {2, 3, 4}
-
-    # Substring + case-insensitive: "frozen" matches "Frozen".
-    assert {c["id"] for c in repo.search(story="frozen")} == {2, 3, 4}
-
-    # Story is preserved on search output (it's in _SEARCH_FIELDS).
-    elsa = next(c for c in frozen if c["id"] == 2)
-    assert elsa["story"] == "Frozen"
-
-    assert repo.search(story="Mulan") == []
-
-
-def test_count_story_filter(repo):
-    assert repo.count(story="Frozen") == 3
-    assert repo.count(story="101 Dalmatians") == 1
-    assert repo.count(story="Mulan") == 0
 
 
 def test_count_card_type_filter(repo):
