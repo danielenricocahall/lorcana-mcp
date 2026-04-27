@@ -142,10 +142,6 @@ def normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
     set_code = set_obj.get("code")
     set_name = set_obj.get("name")
 
-    images = ((raw.get("image_uris") or {}).get("digital")) or {}
-    image_full = images.get("large") or images.get("normal")
-    image_thumbnail = images.get("small") or images.get("normal")
-
     collector_number = raw.get("collector_number")
     full_identifier = f"{collector_number} • {set_code}" if collector_number and set_code else None
 
@@ -169,8 +165,6 @@ def normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
         "set_name": set_name,
         "number": _safe_int(collector_number),
         "rarity": _normalize_rarity(raw.get("rarity")),
-        "image_full": image_full,
-        "image_thumbnail": image_thumbnail,
         "subtypes": subtypes,
         "abilities": abilities,
         "full_identifier": full_identifier,
