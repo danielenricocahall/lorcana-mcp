@@ -182,7 +182,7 @@ Once connected to an MCP client, you can ask natural language questions like:
 > **Note:** For plain keyword queries (Evasive, Bodyguard, Shift, etc.) use the `keyword` parameter — it filters against the structured ability list and is more reliable than substring search. For value-specific queries like `Singer 5` or `Resist +2`, use `body_text` (keyword values live in the card's full text, not the ability list).
 
 ## MCP tools
-- `search_cards` — filter and retrieve card objects (supports `response_format="toon"` for ~50% fewer tokens)
+- `search_cards` — filter and retrieve card objects (supports `response_format="toon"` for ~10% fewer tokens)
 - `count_cards` — count cards matching a filter without returning full objects
 - `aggregate_cards` — card counts grouped by `cost` (ink curve), `rarity`, `color`, `set_code`, or `type`
 - `resolve_card` — fuzzy-match an informal/partial/misspelled card name to the closest cards (returns full card data)
