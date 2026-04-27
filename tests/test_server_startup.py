@@ -34,9 +34,6 @@ class FakeRepo:
     def top_traits(self, limit: int = 10):
         return {}
 
-    def color_distribution(self):
-        return {}
-
 
 class FakeApiClient:
     def __init__(self, _config):
