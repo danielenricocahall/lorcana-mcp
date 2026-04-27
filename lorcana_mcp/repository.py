@@ -116,10 +116,6 @@ class CardRepository(ABC):
     def top_traits(self, limit: int = 10) -> dict[str, int]:
         raise NotImplementedError
 
-    @abstractmethod
-    def color_distribution(self) -> dict[str, int]:
-        raise NotImplementedError
-
     @property
     @abstractmethod
     def _all_cards(self) -> list[dict[str, Any]]:
@@ -450,14 +446,6 @@ class InMemoryCardRepository(CardRepository):
             for trait in _parse_listish(card.get("subtypes")):
                 counter[trait] += 1
         return dict(counter.most_common(limited))
-
-    def color_distribution(self) -> dict[str, int]:
-        counter: Counter = Counter()
-        for card in self._cards:
-            for color in card.get("color") or []:
-                if color:
-                    counter[color.lower()] += 1
-        return dict(counter.most_common())
 
     @property
     def _all_cards(self) -> list[dict[str, Any]]:

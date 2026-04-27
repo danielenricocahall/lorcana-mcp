@@ -193,6 +193,9 @@ Once connected to an MCP client, you can ask natural language questions like:
 - `deck_stats` — compute ink curve, color split, inkable count, and type breakdown for a deck
 - `server_status` — startup metadata (card count, config)
 
+## MCP prompts
+- `build_deck(colors, playstyle="balanced")` — guides the model through assembling a legal Lorcana deck (60-card minimum, ≤2 inks, max 4 copies of any card) for the requested color(s) and playstyle (`aggressive` / `control` / `lore-race` / `balanced`). Uses the search/aggregate tools above plus the rules embedded in the server instructions.
+
 ## TOON response format
 
 `search_cards` accepts a `response_format` argument:

@@ -155,12 +155,8 @@ def test_repository_aggregations(repo):
     top_traits = repo.top_traits(limit=3)
     assert top_traits["Hero"] == 3  # Mickey, Anna, Pongo
 
-    # Dual-ink Pongo contributes to both Amber and Amethyst.
-    color_distribution = repo.color_distribution()
-    assert color_distribution["amber"] == 3
-    assert color_distribution["amethyst"] == 3
-
-    # count_by("color") flattens the list and matches color_distribution.
+    # Dual-ink Pongo contributes to both Amber and Amethyst — count_by flattens
+    # the color list so dual-ink cards count under both buckets.
     color_counts = repo.count_by("color")
     assert color_counts["Amber"] == 3
     assert color_counts["Amethyst"] == 3
