@@ -240,3 +240,6 @@ Measured with `benchmarks/bench_toon.py` against the live ~2,270-card dataset (p
 Note: TOON's relative savings are smaller here than they were before the printings consolidation (pre-PR-#29 the same queries showed ~50% reductions). That gap is structural to the nested `printings` array — TOON's columnar encoding wins on the top-level fields but falls back to JSON-style encoding inside the per-printing entries, so the array dilutes the relative gain. Absolute token counts are still down meaningfully versus the equivalent count of pre-consolidation rows since each unique card is now represented once with a small printings list rather than as 1-3 separate full rows.
 
 Reproduce with `PYTHONPATH=. uv run python benchmarks/bench_toon.py` (requires a populated `cards.json` cache).
+
+## Disclaimer
+This is a personal, unofficial fan and engineering project. It is not affiliated with, endorsed by, sponsored by, or reviewed by Disney, Ravensburger, or the Disney Lorcana TCG team. I worked only with publicly available/community data sources. All Disney Lorcana TCG names, card text, trademarks, and related intellectual property belong to Disney and Ravensburger. This project is non-commercial and reflects my personal views only, not those of my employer.
