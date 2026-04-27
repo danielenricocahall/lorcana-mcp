@@ -29,7 +29,6 @@ CHARACTER_RAW = {
     "set": {"code": "1", "id": "set_1", "name": "The First Chapter"},
     "classifications": ["Storyborn", "Hero"],
     "keywords": [],
-    "illustrators": ["Some Artist"],
 }
 
 DUAL_INK_RAW = {
@@ -50,7 +49,6 @@ DUAL_INK_RAW = {
     "set": {"code": "P2", "name": "Promo 2"},
     "classifications": ["Storyborn"],
     "keywords": [],
-    "illustrators": [],
 }
 
 SONG_RAW = {
@@ -68,7 +66,6 @@ SONG_RAW = {
     "set": {"code": "1", "name": "The First Chapter"},
     "classifications": [],
     "keywords": [],
-    "illustrators": ["Eric Proctor"],
 }
 
 KEYWORDS_RAW = {
@@ -89,7 +86,6 @@ KEYWORDS_RAW = {
     "set": {"code": "1", "name": "The First Chapter"},
     "classifications": ["Storyborn", "Hero"],
     "keywords": ["Evasive", "Rush"],
-    "illustrators": [],
 }
 
 
@@ -115,8 +111,6 @@ def test_normalize_character_basic_fields():
     assert out["number"] == 115
     assert out["subtypes"] == "Storyborn • Hero"
     assert out["abilities"] == []
-    assert out["artists"] == "Some Artist"
-    assert out["full_identifier"] == "115 • 1"
 
 
 def test_normalize_dual_ink_uses_inks_list_with_both_colors():
@@ -165,7 +159,7 @@ def test_normalize_handles_missing_optional_fields():
         "text": "do a thing",
         "rarity": "Common",
         "set": {"code": "1"},
-        # No version, classifications, keywords, illustrators, ink/inks, etc.
+        # No version, classifications, keywords, ink/inks, etc.
     }
     out = normalize_card(minimal)
     assert out["full_name"] == "Test"
@@ -173,7 +167,6 @@ def test_normalize_handles_missing_optional_fields():
     assert out["color"] == []
     assert out["subtypes"] is None
     assert out["abilities"] == []
-    assert out["artists"] is None
     assert out["set_name"] is None
     assert out["number"] is None  # No collector_number → None.
 
@@ -181,8 +174,7 @@ def test_normalize_handles_missing_optional_fields():
 def test_normalize_handles_non_numeric_collector_number_for_promos():
     promo = {**CHARACTER_RAW, "collector_number": "P1-3"}
     out = normalize_card(promo)
-    assert out["number"] is None  # Can't parse "P1-3" as int.
-    assert out["full_identifier"] == "P1-3 • 1"  # But still surface it as a string.
+    assert out["number"] is None  # Can't parse "P1-3" as int — surface None rather than raising.
 
 
 def test_normalize_humanizes_snake_cased_rarity():
@@ -217,7 +209,6 @@ def _normalized(*, full_name, set_code, number, rarity, **extra):
         "set_name": f"Set {set_code}",
         "number": number,
         "rarity": rarity,
-        "full_identifier": f"{number} • {set_code}",
         **extra,
     }
 

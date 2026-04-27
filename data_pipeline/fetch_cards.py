@@ -135,15 +135,11 @@ def normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
     keywords = raw.get("keywords") or []
     abilities = [{"name": str(k).strip().title()} for k in keywords if str(k).strip()]
 
-    illustrators = raw.get("illustrators") or []
-    artists = ", ".join(illustrators) if illustrators else None
-
     set_obj = raw.get("set") or {}
     set_code = set_obj.get("code")
     set_name = set_obj.get("name")
 
     collector_number = raw.get("collector_number")
-    full_identifier = f"{collector_number} • {set_code}" if collector_number and set_code else None
 
     return {
         "id": raw.get("id"),
@@ -160,14 +156,12 @@ def normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
         "full_text": raw.get("text"),
         "flavor_text": raw.get("flavor_text") or None,
         "lore": raw.get("lore"),
-        "artists": artists,
         "set_code": set_code,
         "set_name": set_name,
         "number": _safe_int(collector_number),
         "rarity": _normalize_rarity(raw.get("rarity")),
         "subtypes": subtypes,
         "abilities": abilities,
-        "full_identifier": full_identifier,
     }
 
 
@@ -181,10 +175,9 @@ def _card_dedupe_key(raw: dict[str, Any]) -> str:
 # Fields that identify a specific printing rather than the gameplay card itself.
 # These get collected into the per-card `printings` array during consolidation.
 # Kept minimal on purpose: callers only need to know which sets / rarities /
-# collector numbers exist for a card; per-printing image URLs, internal Lorcast
-# IDs, and full_identifier strings would balloon JSON / TOON output without
-# adding answerable questions ("show me the alt-art for the Set 9 Enchanted
-# version" was never a real query in this server's history).
+# collector numbers exist for a card. Per-printing image URLs and internal
+# Lorcast IDs would balloon JSON / TOON output without answering any query the
+# model has actually wanted to make.
 _PRINTING_FIELDS = (
     "set_code",
     "set_name",
