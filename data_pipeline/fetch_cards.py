@@ -135,9 +135,6 @@ def normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
     keywords = raw.get("keywords") or []
     abilities = [{"name": str(k).strip().title()} for k in keywords if str(k).strip()]
 
-    illustrators = raw.get("illustrators") or []
-    artists = ", ".join(illustrators) if illustrators else None
-
     set_obj = raw.get("set") or {}
     set_code = set_obj.get("code")
     set_name = set_obj.get("name")
@@ -159,7 +156,6 @@ def normalize_card(raw: dict[str, Any]) -> dict[str, Any]:
         "full_text": raw.get("text"),
         "flavor_text": raw.get("flavor_text") or None,
         "lore": raw.get("lore"),
-        "artists": artists,
         "set_code": set_code,
         "set_name": set_name,
         "number": _safe_int(collector_number),

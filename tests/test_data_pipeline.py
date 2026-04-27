@@ -29,7 +29,6 @@ CHARACTER_RAW = {
     "set": {"code": "1", "id": "set_1", "name": "The First Chapter"},
     "classifications": ["Storyborn", "Hero"],
     "keywords": [],
-    "illustrators": ["Some Artist"],
 }
 
 DUAL_INK_RAW = {
@@ -50,7 +49,6 @@ DUAL_INK_RAW = {
     "set": {"code": "P2", "name": "Promo 2"},
     "classifications": ["Storyborn"],
     "keywords": [],
-    "illustrators": [],
 }
 
 SONG_RAW = {
@@ -68,7 +66,6 @@ SONG_RAW = {
     "set": {"code": "1", "name": "The First Chapter"},
     "classifications": [],
     "keywords": [],
-    "illustrators": ["Eric Proctor"],
 }
 
 KEYWORDS_RAW = {
@@ -89,7 +86,6 @@ KEYWORDS_RAW = {
     "set": {"code": "1", "name": "The First Chapter"},
     "classifications": ["Storyborn", "Hero"],
     "keywords": ["Evasive", "Rush"],
-    "illustrators": [],
 }
 
 
@@ -115,7 +111,6 @@ def test_normalize_character_basic_fields():
     assert out["number"] == 115
     assert out["subtypes"] == "Storyborn • Hero"
     assert out["abilities"] == []
-    assert out["artists"] == "Some Artist"
 
 
 def test_normalize_dual_ink_uses_inks_list_with_both_colors():
@@ -164,7 +159,7 @@ def test_normalize_handles_missing_optional_fields():
         "text": "do a thing",
         "rarity": "Common",
         "set": {"code": "1"},
-        # No version, classifications, keywords, illustrators, ink/inks, etc.
+        # No version, classifications, keywords, ink/inks, etc.
     }
     out = normalize_card(minimal)
     assert out["full_name"] == "Test"
@@ -172,7 +167,6 @@ def test_normalize_handles_missing_optional_fields():
     assert out["color"] == []
     assert out["subtypes"] is None
     assert out["abilities"] == []
-    assert out["artists"] is None
     assert out["set_name"] is None
     assert out["number"] is None  # No collector_number → None.
 
