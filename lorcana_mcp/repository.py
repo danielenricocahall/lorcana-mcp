@@ -48,15 +48,8 @@ def _parse_listish(value: Any) -> list[str]:
     if not text:
         return []
 
-    try:
-        decoded = json.loads(text)
-        if isinstance(decoded, list):
-            return [str(item).strip() for item in decoded if str(item).strip()]
-        if isinstance(decoded, str):
-            text = decoded
-    except json.JSONDecodeError:
-        pass
-
+    # Normalized cards carry `subtypes` as a delimiter-joined string
+    # (the pipeline builds it via " • ".join(...)), so split on those delimiters.
     return [part.strip() for part in re.split(r"[,|•]", text) if part.strip()]
 
 
