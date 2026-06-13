@@ -146,6 +146,36 @@ def test_find_by_full_name(repo):
     assert repo.find_by_full_name("Not A Real Card") is None
 
 
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        ("mickey", "Mickey Mouse - Brave Little Tailor"),
+        ("Elsa - Spirit of Winter", "Elsa - Spirit of Winter"),
+        ("let it go", "Let It Go"),
+    ],
+    ids=["partial-name", "exact-full-name", "song-name"],
+)
+def test_resolve_card_ranks_best_match_first(repo, query, expected):
+    assert repo.resolve_card(query)[0]["full_name"] == expected
+
+
+@pytest.mark.parametrize(
+    ("query", "expected"),
+    [
+        ("micky mouse", "Mickey Mouse - Brave Little Tailor"),
+        ("ana arendelle", "Anna - Heir to Arendelle"),
+    ],
+    ids=["missing-letter", "doubled-letter-dropped"],
+)
+def test_resolve_card_tolerates_typos(repo, query, expected):
+    # Fuzzy matching should recover from a misspelling, not just substring hits.
+    assert repo.resolve_card(query)[0]["full_name"] == expected
+
+
+def test_resolve_card_respects_limit(repo):
+    assert len(repo.resolve_card("a", limit=2)) <= 2
+
+
 def test_repository_aggregations(repo):
     rarity_counts = repo.count_by("rarity")
     assert rarity_counts["Common"] == 2
