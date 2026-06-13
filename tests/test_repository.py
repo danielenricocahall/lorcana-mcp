@@ -146,6 +146,25 @@ def test_find_by_full_name(repo):
     assert repo.find_by_full_name("Not A Real Card") is None
 
 
+def test_resolve_card_ranks_best_match_first(repo):
+    # Partial name (just the base name) resolves to the right card.
+    assert repo.resolve_card("mickey")[0]["full_name"] == "Mickey Mouse - Brave Little Tailor"
+    # Full exact name resolves to itself.
+    assert repo.resolve_card("Elsa - Spirit of Winter")[0]["full_name"] == "Elsa - Spirit of Winter"
+    # Non-character (Song) names resolve too.
+    assert repo.resolve_card("let it go")[0]["full_name"] == "Let It Go"
+
+
+def test_resolve_card_tolerates_typos(repo):
+    # Fuzzy matching should recover from a misspelling, not just substring hits.
+    assert repo.resolve_card("micky mouse")[0]["full_name"] == "Mickey Mouse - Brave Little Tailor"
+    assert repo.resolve_card("ana arendelle")[0]["full_name"] == "Anna - Heir to Arendelle"
+
+
+def test_resolve_card_respects_limit(repo):
+    assert len(repo.resolve_card("a", limit=2)) <= 2
+
+
 def test_repository_aggregations(repo):
     rarity_counts = repo.count_by("rarity")
     assert rarity_counts["Common"] == 2
