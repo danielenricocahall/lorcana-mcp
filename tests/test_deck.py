@@ -8,8 +8,25 @@ from lorcana_mcp.deck import (
 )
 
 
-def _card(name: str, *, color: list[str], cost: int = 3, inkwell: bool = True, type_: str = "Character") -> dict:
-    return {"full_name": name, "color": color, "cost": cost, "inkwell": inkwell, "type": type_}
+def _card(
+    name: str,
+    *,
+    color: list[str],
+    cost: int = 3,
+    inkwell: bool = True,
+    type_: str = "Character",
+    keywords: list[str] | None = None,
+    subtypes: str | None = None,
+) -> dict:
+    return {
+        "full_name": name,
+        "color": color,
+        "cost": cost,
+        "inkwell": inkwell,
+        "type": type_,
+        "abilities": [{"name": k} for k in keywords or []],
+        "subtypes": subtypes,
+    }
 
 
 def _entry(card: dict | None, count: int, name: str | None = None) -> dict:
@@ -201,6 +218,49 @@ def test_deck_stats_unresolved_excluded_from_stats_but_counted_in_total():
     assert stats["color_split"] == {"Amber": 4}
     assert stats["inkable_count"] == 4
     assert stats["uninkable_count"] == 0
+
+
+def test_deck_stats_keyword_counts_tally_copies_not_distinct_cards():
+    pegasus = _card("Pegasus - Gift for Hercules", color=["Amethyst"], keywords=["Evasive"])
+    gwythaint = _card("Gwythaint - Savage Hunter", color=["Amethyst"], keywords=["Evasive"])
+    dumbo = _card("Dumbo - Ninth Wonder", color=["Amber"], keywords=["Evasive", "Ward"])
+    vanilla = _card("Anna - Heir to Arendelle", color=["Amber"])
+    deck = [_entry(pegasus, 4), _entry(gwythaint, 4), _entry(dumbo, 3), _entry(vanilla, 2)]
+    stats = deck_stats(deck)
+    # 11 Evasive copies across 3 distinct cards; Dumbo lands in both keyword buckets.
+    assert stats["keyword_counts"] == {"Evasive": 11, "Ward": 3}
+    assert stats["total_cards"] == 13
+
+
+def test_deck_stats_keyword_counts_omits_cards_with_no_keywords():
+    vanilla = _card("Anna - Heir to Arendelle", color=["Amber"])
+    stats = deck_stats([_entry(vanilla, 4)])
+    assert stats["keyword_counts"] == {}
+    assert stats["card_keywords"] == []
+
+
+def test_deck_stats_card_keywords_lists_per_card_tags():
+    dumbo = _card("Dumbo - Ninth Wonder", color=["Amber"], keywords=["Ward", "Evasive"])
+    vanilla = _card("Anna - Heir to Arendelle", color=["Amber"])
+    stats = deck_stats([_entry(dumbo, 3), _entry(vanilla, 2)])
+    assert stats["card_keywords"] == [
+        {"name": "Dumbo - Ninth Wonder", "count": 3, "keywords": ["Evasive", "Ward"]},
+    ]
+
+
+def test_deck_stats_subtype_counts_split_on_bullet_delimiter():
+    hook = _card("Captain Hook - Forceful Duelist", color=["Steel"], subtypes="Dreamborn • Villain • Pirate")
+    stats = deck_stats([_entry(hook, 4)])
+    assert stats["subtype_counts"] == {"Dreamborn": 4, "Villain": 4, "Pirate": 4}
+
+
+def test_deck_stats_unresolved_excluded_from_keyword_and_subtype_counts():
+    dumbo = _card("Dumbo - Ninth Wonder", color=["Amber"], keywords=["Evasive"], subtypes="Storyborn")
+    deck = [_entry(dumbo, 4), _entry(None, 2, name="Bogus")]
+    stats = deck_stats(deck)
+    assert stats["keyword_counts"] == {"Evasive": 4}
+    assert stats["subtype_counts"] == {"Storyborn": 4}
+    assert stats["total_cards"] == 6
 
 
 def test_dump_then_parse_roundtrip():
