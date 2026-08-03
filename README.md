@@ -190,7 +190,7 @@ Once connected to an MCP client, you can ask natural language questions like:
 - `export_deck` — render a deck as a Dreamborn/Pixelborn-compatible text deck list
 - `import_deck` — parse a Dreamborn/Pixelborn-style deck list, returning resolved cards plus any unresolved lines with fuzzy candidates
 - `validate_deck` — check a deck against the format rules (≥60 cards, max 4 copies, ≤2 inks); returns `{legal, total_cards, inks, violations}`
-- `deck_stats` — compute ink curve, color split, inkable count, and type breakdown for a deck
+- `deck_stats` — compute ink curve, color split, inkable count, type breakdown, keyword counts (Evasive, Ward, Shift, ...), subtype counts, and per-card keyword tags for a deck
 - `server_status` — startup metadata (card count, config)
 
 ## MCP prompts

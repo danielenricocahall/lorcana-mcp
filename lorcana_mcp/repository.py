@@ -38,7 +38,7 @@ def _slim_card(card: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in card.items() if k in _SEARCH_FIELDS}
 
 
-def _parse_listish(value: Any) -> list[str]:
+def parse_listish(value: Any) -> list[str]:
     if value is None:
         return []
     if isinstance(value, list):
@@ -437,7 +437,7 @@ class InMemoryCardRepository(CardRepository):
         limited = max(1, min(limit, 100))
         counter: Counter = Counter()
         for card in self._cards:
-            for trait in _parse_listish(card.get("subtypes")):
+            for trait in parse_listish(card.get("subtypes")):
                 counter[trait] += 1
         return dict(counter.most_common(limited))
 

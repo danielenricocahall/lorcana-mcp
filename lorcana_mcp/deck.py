@@ -13,8 +13,10 @@ Example:
 from __future__ import annotations
 
 import re
+from collections import Counter
 from typing import Any, NamedTuple
 
+from lorcana_mcp.repository import parse_listish
 from lorcana_mcp.rules import LORCANA_MAX_COPIES, LORCANA_MAX_INKS, LORCANA_MIN_DECK_SIZE
 
 # Matches `4 Card Name` or `4x Card Name`, with arbitrary surrounding whitespace.
@@ -131,14 +133,22 @@ def deck_stats(entries: list[dict[str, Any]]) -> dict[str, Any]:
 
     Color split counts copies per color; dual-ink cards contribute to BOTH
     color buckets, so the sum of `color_split` values may exceed `total_cards`
-    by the dual-ink contribution. Unresolved names are excluded from the per-
-    card stats but still counted in `total_cards`.
+    by the dual-ink contribution. The same holds for `keyword_counts` and
+    `subtype_counts` — a card with both Evasive and Ward lands in both buckets.
+
+    Keywords come from the structured `abilities` array, which lists only the
+    keywords a card itself has; text that merely grants or references a keyword
+    ("chosen character gains Evasive") does not count. Unresolved names are
+    excluded from the per-card stats but still counted in `total_cards`.
     """
     total = 0
     inks: set[str] = set()
-    ink_curve: dict[int, int] = {}
-    color_split: dict[str, int] = {}
-    type_breakdown: dict[str, int] = {}
+    ink_curve: Counter[int] = Counter()
+    color_split: Counter[str] = Counter()
+    type_breakdown: Counter[str] = Counter()
+    keyword_counts: Counter[str] = Counter()
+    subtype_counts: Counter[str] = Counter()
+    card_keywords: list[dict[str, Any]] = []
     inkable_count = 0
     uninkable_count = 0
     unresolved: list[str] = []
@@ -152,24 +162,35 @@ def deck_stats(entries: list[dict[str, Any]]) -> dict[str, Any]:
             continue
         cost = card.get("cost")
         if cost is not None:
-            ink_curve[int(cost)] = ink_curve.get(int(cost), 0) + count
+            ink_curve[int(cost)] += count
         for color in card.get("color") or []:
             inks.add(color)
-            color_split[color] = color_split.get(color, 0) + count
+            color_split[color] += count
         if card.get("inkwell"):
             inkable_count += count
         else:
             uninkable_count += count
-        ctype = str(card.get("type") or "Unknown")
-        type_breakdown[ctype] = type_breakdown.get(ctype, 0) + count
+        type_breakdown[str(card.get("type") or "Unknown")] += count
+        keywords = sorted({str(a.get("name")).strip() for a in card.get("abilities") or [] if a.get("name")})
+        for keyword in keywords:
+            keyword_counts[keyword] += count
+        if keywords:
+            card_keywords.append(
+                {"name": str(card.get("full_name") or entry.get("name", "")), "count": count, "keywords": keywords}
+            )
+        for subtype in parse_listish(card.get("subtypes")):
+            subtype_counts[subtype] += count
 
     return {
         "total_cards": total,
         "inks": sorted(inks),
         "ink_curve": dict(sorted(ink_curve.items())),
-        "color_split": color_split,
+        "color_split": dict(color_split),
         "inkable_count": inkable_count,
         "uninkable_count": uninkable_count,
-        "type_breakdown": type_breakdown,
+        "type_breakdown": dict(type_breakdown),
+        "keyword_counts": dict(keyword_counts.most_common()),
+        "subtype_counts": dict(subtype_counts.most_common()),
+        "card_keywords": card_keywords,
         "unresolved": unresolved,
     }
