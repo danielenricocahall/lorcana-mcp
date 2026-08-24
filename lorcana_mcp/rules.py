@@ -13,6 +13,62 @@ LORCANA_MIN_DECK_SIZE = 60
 LORCANA_MAX_COPIES = 4
 LORCANA_MAX_INKS = 2
 
+# The six ink colors. Single source for the valid-color list the model is told about.
+LORCANA_INK_COLORS = ["amber", "amethyst", "emerald", "ruby", "sapphire", "steel"]
+
+# Keyword glossary. Interpolated into LORCANA_RULES below (so the rules text and the
+# `keywords` resource stay in lockstep) and exposed on its own as a resource.
+LORCANA_KEYWORDS = """\
+**Bodyguard** - Enters play exerted. Opponents must challenge this character before other non-Bodyguard
+characters you control. (Opponents are not forced to challenge, but if they do, they must target
+a Bodyguard if one is exerted.) If multiple Bodyguards are exerted, the opponent chooses which to challenge.
+
+**Challenger +N** - Gets +N Strength when initiating a challenge (not when defending).
+
+**Evasive** - Can only be challenged by other Evasive characters. Can challenge non-Evasive characters normally.
+
+**Reckless** - Must challenge each turn if able. Cannot quest if a valid challenge target exists.
+
+**Resist +N** - Takes N less damage from all sources. Minimum 0 damage.
+
+**Rush** - Can challenge on the turn it is played (bypasses summoning sickness for challenging only, not questing).
+
+**Shift N** - Play on top of an existing character with the same name, paying N ink instead of full cost.
+Name matching uses the base name only — any "Elsa" can shift onto any other "Elsa" regardless of
+subtitle/version. The shifted character inherits position (ready/exerted) and damage. If the base
+character was already in play from a prior turn, the shifted character is NOT subject to summoning
+sickness. Named Shift variants relax the same-name requirement: **Universal Shift** lets you shift
+onto any character; **Puppy Shift** lets you shift onto any character with the Puppy trait.
+Otherwise variants behave like base Shift.
+
+**Singer N** - Lets a character sing songs costing up to N regardless of the character's own cost
+(see Card Types → Song for the full singing rules, including the default rule that any character
+with cost ≥ the song's cost can sing it without needing the Singer keyword).
+
+**Sing Together N** - Keyword on the *song*. Any number of your (and your teammates', in multiplayer)
+characters whose combined cost is at least N may exert together to sing this song for free. Each
+participating character must be ready and not have summoning sickness.
+
+**Support** - When questing, may add this character's Strength to another chosen character until your next turn.
+
+**Voiceless** - Character cannot sing songs at all (overrides the default singing rule and Singer N).
+
+**Ward** - Cannot be targeted by opponent's abilities or effects. Does NOT prevent being challenged.
+AoE effects ("all characters") still affect Ward characters.
+
+**Vanish** - When an opponent chooses this character as the target of an action, this character
+is banished. Vanish is a **downside** on its bearer — opponent actions that target the card
+become free removal (even soft effects like "exert chosen character" banish it outright). Vanish
+cards typically carry above-rate stats or stronger-than-usual abilities to compensate for the
+drawback. Some Illusion-tribal builds turn the banish into upside via "when one of your
+characters is banished" triggers, but the default reading is "this card is easier for opponents
+to remove — play around opponent targeting."
+
+**Boost N** - Once per turn, pay N ink to put the top card of your deck face-down under this character.
+The face-down card is not in play and cannot be looked at. Cards placed underneath typically enable
+the character's secondary ability (e.g., stat buffs while boosted, triggered effects on quest/challenge,
+or effects that fire when a card is placed underneath). Boost costs vary (1, 2, or 3 ink)."""
+
 _LORCANA_RULES_TEMPLATE = Template("""
 ## Disney Lorcana Game Rules
 
@@ -157,55 +213,7 @@ discard, and vice versa.
 
 ### Keywords
 
-**Bodyguard** - Enters play exerted. Opponents must challenge this character before other non-Bodyguard
-characters you control. (Opponents are not forced to challenge, but if they do, they must target
-a Bodyguard if one is exerted.) If multiple Bodyguards are exerted, the opponent chooses which to challenge.
-
-**Challenger +N** - Gets +N Strength when initiating a challenge (not when defending).
-
-**Evasive** - Can only be challenged by other Evasive characters. Can challenge non-Evasive characters normally.
-
-**Reckless** - Must challenge each turn if able. Cannot quest if a valid challenge target exists.
-
-**Resist +N** - Takes N less damage from all sources. Minimum 0 damage.
-
-**Rush** - Can challenge on the turn it is played (bypasses summoning sickness for challenging only, not questing).
-
-**Shift N** - Play on top of an existing character with the same name, paying N ink instead of full cost.
-Name matching uses the base name only — any "Elsa" can shift onto any other "Elsa" regardless of
-subtitle/version. The shifted character inherits position (ready/exerted) and damage. If the base
-character was already in play from a prior turn, the shifted character is NOT subject to summoning
-sickness. Named Shift variants relax the same-name requirement: **Universal Shift** lets you shift
-onto any character; **Puppy Shift** lets you shift onto any character with the Puppy trait.
-Otherwise variants behave like base Shift.
-
-**Singer N** - Lets a character sing songs costing up to N regardless of the character's own cost
-(see Card Types → Song for the full singing rules, including the default rule that any character
-with cost ≥ the song's cost can sing it without needing the Singer keyword).
-
-**Sing Together N** - Keyword on the *song*. Any number of your (and your teammates', in multiplayer)
-characters whose combined cost is at least N may exert together to sing this song for free. Each
-participating character must be ready and not have summoning sickness.
-
-**Support** - When questing, may add this character's Strength to another chosen character until your next turn.
-
-**Voiceless** - Character cannot sing songs at all (overrides the default singing rule and Singer N).
-
-**Ward** - Cannot be targeted by opponent's abilities or effects. Does NOT prevent being challenged.
-AoE effects ("all characters") still affect Ward characters.
-
-**Vanish** - When an opponent chooses this character as the target of an action, this character
-is banished. Vanish is a **downside** on its bearer — opponent actions that target the card
-become free removal (even soft effects like "exert chosen character" banish it outright). Vanish
-cards typically carry above-rate stats or stronger-than-usual abilities to compensate for the
-drawback. Some Illusion-tribal builds turn the banish into upside via "when one of your
-characters is banished" triggers, but the default reading is "this card is easier for opponents
-to remove — play around opponent targeting."
-
-**Boost N** - Once per turn, pay N ink to put the top card of your deck face-down under this character.
-The face-down card is not in play and cannot be looked at. Cards placed underneath typically enable
-the character's secondary ability (e.g., stat buffs while boosted, triggered effects on quest/challenge,
-or effects that fire when a card is placed underneath). Boost costs vary (1, 2, or 3 ink).
+${keywords}
 
 ### Additional Rules
 
@@ -220,4 +228,5 @@ LORCANA_RULES = _LORCANA_RULES_TEMPLATE.substitute(
     min_deck_size=LORCANA_MIN_DECK_SIZE,
     max_copies=LORCANA_MAX_COPIES,
     max_inks=LORCANA_MAX_INKS,
+    keywords=LORCANA_KEYWORDS,
 ).strip()

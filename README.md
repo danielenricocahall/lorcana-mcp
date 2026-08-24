@@ -193,6 +193,13 @@ Once connected to an MCP client, you can ask natural language questions like:
 - `deck_stats` — compute ink curve, color split, inkable count, type breakdown, keyword counts (Evasive, Ward, Shift, ...), subtype counts, and per-card keyword tags for a deck
 - `server_status` — startup metadata (card count, config)
 
+## MCP resources
+Read-only reference data the client can attach as context (URIs, not tool calls):
+- `lorcana://rules` — the full Lorcana rules reference (markdown)
+- `lorcana://keywords` — keyword glossary (Bodyguard, Evasive, Shift, Singer, Ward, …)
+- `lorcana://colors` — the six ink colors and the ≤2-per-deck limit (JSON)
+- `lorcana://card/{full_name}` — a single card by its exact `full_name` (JSON); for fuzzy/partial lookups use the `resolve_card` tool
+
 ## MCP prompts
 - `build_deck(colors, playstyle="balanced")` — guides the model through assembling a legal Lorcana deck (60-card minimum, ≤2 inks, max 4 copies of any card) for the requested color(s) and playstyle (`aggressive` / `control` / `lore-race` / `balanced`). Uses the search/aggregate tools above plus the rules embedded in the server instructions.
 

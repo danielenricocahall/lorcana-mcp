@@ -22,7 +22,7 @@ from lorcana_mcp.deck import (
     validate_deck as _validate_deck,
 )
 from lorcana_mcp.repository import InMemoryCardRepository
-from lorcana_mcp.rules import LORCANA_RULES
+from lorcana_mcp.rules import LORCANA_INK_COLORS, LORCANA_KEYWORDS, LORCANA_RULES
 
 
 def _get_version() -> str:
@@ -424,5 +424,47 @@ Total: 60 cards | Inkable: N cards
 ```
 
 Then add a short paragraph covering: win condition, 2-3 key synergies, and inkable balance."""
+
+    @mcp.resource(
+        "lorcana://rules",
+        name="Lorcana game rules",
+        description="The full Disney Lorcana rules reference: win condition, turn structure, deck building, keywords.",
+        mime_type="text/markdown",
+    )
+    def rules_resource() -> str:
+        return LORCANA_RULES
+
+    @mcp.resource(
+        "lorcana://keywords",
+        name="Lorcana keyword glossary",
+        description="Glossary of Lorcana ability keywords (Bodyguard, Evasive, Shift, Singer, Ward, ...).",
+        mime_type="text/markdown",
+    )
+    def keywords_resource() -> str:
+        return LORCANA_KEYWORDS
+
+    @mcp.resource(
+        "lorcana://colors",
+        name="Lorcana ink colors",
+        description="The six Lorcana ink colors. A deck may use at most two.",
+        mime_type="application/json",
+    )
+    def colors_resource() -> dict[str, Any]:
+        return {"colors": LORCANA_INK_COLORS, "max_per_deck": 2}
+
+    @mcp.resource(
+        "lorcana://card/{full_name}",
+        name="Lorcana card by full name",
+        description=(
+            "A single card by its exact full_name (e.g. 'Elsa - Spirit of Winter'). "
+            "For fuzzy/partial lookups use the resolve_card tool instead."
+        ),
+        mime_type="application/json",
+    )
+    def card_resource(full_name: str) -> dict[str, Any]:
+        card = repository.find_by_full_name(full_name)
+        if card is None:
+            raise ValueError(f"No card found with full_name {full_name!r}")
+        return card
 
     return mcp
