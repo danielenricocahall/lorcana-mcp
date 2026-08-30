@@ -71,7 +71,9 @@ their decoded form** rather than echoing the raw symbol. Write "4 ink" not "4 {I
 ### Summoning Sickness ("The Ink Is Drying")
 - Characters CANNOT quest, challenge, or use exert-based abilities on the turn they are played.
 - Rush is the only exception: Rush characters can challenge (but not quest) on the turn they are played.
-- Shift bypasses summoning sickness if the character underneath was already in play from a previous turn.
+- Shift bypasses summoning sickness if the character underneath was already in play from a previous
+  turn. When shifting onto two characters at once (Duo/Combo Shift), BOTH must have been in play from
+  a previous turn, or the shifted character is summoning-sick.
 - Items are NOT subject to summoning sickness — they can be used immediately.
 - Locations are NOT subject to summoning sickness — they passively gain lore starting on your next Set Step.
 
@@ -173,11 +175,56 @@ a Bodyguard if one is exerted.) If multiple Bodyguards are exerted, the opponent
 
 **Shift N** - Play on top of an existing character with the same name, paying N ink instead of full cost.
 Name matching uses the base name only — any "Elsa" can shift onto any other "Elsa" regardless of
-subtitle/version. The shifted character inherits position (ready/exerted) and damage. If the base
-character was already in play from a prior turn, the shifted character is NOT subject to summoning
-sickness. Named Shift variants relax the same-name requirement: **Universal Shift** lets you shift
-onto any character; **Puppy Shift** lets you shift onto any character with the Puppy trait.
-Otherwise variants behave like base Shift.
+subtitle/version. The shifted character inherits position (ready/exerted) and damage, and can take
+any action the character underneath could have taken this turn. If the base character was already in
+play from a prior turn, the shifted character is NOT subject to summoning sickness. A few cards use a
+non-ink Shift cost (e.g. "Shift: Discard 2 cards"). The card on top and the card(s) beneath it form a
+**stack**: only the top card is in play, and when it leaves play every card in the stack goes to the
+same zone with it (all to the discard when banished, even if an effect would send the top card
+elsewhere).
+
+**Dual-named characters and Shift.** A character whose name line joins two names with "&" has THREE
+names: each half plus the combined name. "Aladdin & Genie - Mischievous Pals" is a character named
+Aladdin, a character named Genie, AND a character named Aladdin & Genie. ("Chip 'n' Dale - Recovery
+Rangers" is treated as if it had the ampersand.) Two consequences:
+- An effect referencing "characters named Aladdin" includes it; an effect naming "Aladdin & Genie"
+  matches only the combined card, not a plain Aladdin or a plain Genie.
+- **Plain Shift on a dual-named card can land on either half.** Aladdin & Genie - Mischievous Pals
+  (Shift 3) shifts onto any Aladdin *or* any Genie — one character, your choice. This is ordinary
+  Shift plus the name rule, not a special keyword. Same for Carl Fredricksen & Russell, Lilo & Stitch,
+  Woody & Buzz Lightyear, Belle & Beast, Peter Pan & Tinker Bell, and the rest of the "Team" cycle.
+
+**Shift variants.** Shift has six variants. All follow the base Shift rules except as noted. If a card
+combines two variants in one ability (e.g. "Temporary Red Panda Shift"), ALL of their conditions apply.
+- **[Classification] Shift N** - shift onto any of your characters with that classification instead of
+  matching the name: Puppy Shift, Madrigal Shift, Floodborn Shift, Red Panda Shift, etc.
+- **Universal Shift N** - shift onto any of your characters.
+- **Duo Shift N** - shift onto TWO of your characters, one matching each name on the card. Both are
+  required; you cannot Duo Shift onto just one. Mickey Mouse & Minnie Mouse - Adventuring Duo has
+  Duo Shift 0, so with a Mickey and a Minnie in play it costs nothing to play.
+- **Combo Shift N** - base Shift and Duo Shift on the same card: shift onto ONE character matching
+  either name, OR onto TWO characters, one matching each name. Same cost either way (Sulley & Boo -
+  Scare Buddies, Combo Shift 4; Dash Parr & Violet Parr - Super Siblings, Combo Shift 6).
+- **Temporary Shift N** - shift as normal, but at the end of your turn, if the card is still in play,
+  remove all damage from the character and return ONLY the top card to your hand. The card underneath
+  stays in play and becomes the character again — undamaged, since the damage was removed first. The
+  returned card can be shifted down again on a later turn (Meilin Lee, Ming Lee, Grandma Wu).
+- **Potato Shift N** - shift onto one of your ITEMS named Potato rather than onto a character. When
+  shifting onto a non-character, the shifted character is dry only if that card has been in play since
+  the start of your turn (Posey - Vampire Potato).
+
+**Shifting onto two characters (Duo Shift / Combo Shift).** Stack the two cards under the shifted card
+in any order; the result is still a single character. Each state resolves to the worse of the two:
+- Ready + exerted → the shifted character is **exerted**. It is ready only if BOTH were ready.
+- Dry + drying → the shifted character is **drying** (summoning-sick). It is dry, and can quest,
+  challenge, use exert abilities, and sing, only if BOTH were already in play from a prior turn.
+- Damage carries over from the characters underneath, so damage on both is combined onto the single
+  shifted character. (Damage counters stay physically on the stack; the rules state the shifted
+  character retains the damage of what it was played on top of.)
+- It is a 2-for-1 in board presence: two of your characters become one, for one Shift cost.
+
+Some cards grant Shift eligibility rather than having it — Morph - Little Imitator reads "You can
+shift any character on top of this character," and that includes every Shift variant.
 
 **Singer N** - Lets a character sing songs costing up to N regardless of the character's own cost
 (see Card Types → Song for the full singing rules, including the default rule that any character
