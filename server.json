@@ -3,7 +3,7 @@
   "name": "io.github.danielenricocahall/lorcana-mcp",
   "title": "Lorcana MCP",
   "description": "MCP server for searching, exploring, and aggregating Disney Lorcana cards.",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "websiteUrl": "https://github.com/danielenricocahall/lorcana-mcp",
   "repository": {
     "url": "https://github.com/danielenricocahall/lorcana-mcp",
@@ -13,7 +13,7 @@
   "packages": [
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/danielenricocahall/lorcana-mcp:2.3.0",
+      "identifier": "ghcr.io/danielenricocahall/lorcana-mcp:2.4.0",
       "transport": { "type": "stdio" }
     }
   ]
