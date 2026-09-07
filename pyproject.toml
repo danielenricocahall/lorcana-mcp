@@ -1,6 +1,6 @@
 [project]
 name = "lorcana-cards-mcp"
-version = "2.5.0"
+version = "2.5.1"
 description = "MCP server for searching, exploring, and aggregating Disney Lorcana TCG cards — card search, deck validation, deck stats, and Dreamborn/Pixelborn deck import/export."
 readme = "README.md"
 requires-python = ">=3.14"

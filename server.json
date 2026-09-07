@@ -3,7 +3,7 @@
   "name": "io.github.danielenricocahall/lorcana-mcp",
   "title": "Disney Lorcana MCP",
   "description": "MCP server for Disney Lorcana TCG: card search, deck validation, stats, and deck import/export",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "websiteUrl": "https://github.com/danielenricocahall/lorcana-mcp",
   "repository": {
     "url": "https://github.com/danielenricocahall/lorcana-mcp",
@@ -14,14 +14,14 @@
     {
       "registryType": "pypi",
       "identifier": "lorcana-cards-mcp",
-      "version": "2.5.0",
+      "version": "2.5.1",
       "transport": {
         "type": "stdio"
       }
     },
     {
       "registryType": "oci",
-      "identifier": "ghcr.io/danielenricocahall/lorcana-mcp:2.5.0",
+      "identifier": "ghcr.io/danielenricocahall/lorcana-mcp:2.5.1",
       "transport": {
         "type": "stdio"
       }

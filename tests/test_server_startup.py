@@ -141,3 +141,19 @@ def test_server_json_description_fits_mcp_registry_limit():
 
     manifest = json.loads((Path(__file__).resolve().parents[1] / "server.json").read_text())
     assert len(manifest["description"]) <= 100
+
+
+def test_readme_carries_mcp_registry_ownership_proof():
+    """The registry verifies PyPI package ownership by finding this line in the README.
+
+    Without it, `mcp-publisher publish` fails with a 400 and the registry entry
+    goes stale. It lives in the README because that is what PyPI publishes as
+    the package description.
+    """
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    server_name = json.loads((root / "server.json").read_text())["name"]
+
+    assert f"mcp-name: {server_name}" in (root / "README.md").read_text()

@@ -230,3 +230,9 @@ and distributed in accordance with Ravensburger's
 using only publicly available and community data sources. All Disney Lorcana TCG names, card text,
 trademarks, and related intellectual property belong to Disney and Ravensburger. This project is
 non-commercial and reflects my personal views only, not those of my employer.
+
+---
+
+<sub>MCP Registry ownership verification — the registry reads this line from the published package description to confirm this project owns the server name.</sub>
+
+mcp-name: io.github.danielenricocahall/lorcana-mcp
