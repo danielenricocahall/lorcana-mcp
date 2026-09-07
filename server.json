@@ -1,9 +1,9 @@
 {
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.danielenricocahall/lorcana-mcp",
-  "title": "Lorcana MCP",
-  "description": "MCP server for searching, exploring, and aggregating Disney Lorcana cards.",
-  "version": "2.4.0",
+  "title": "Disney Lorcana MCP",
+  "description": "MCP server for searching, exploring, and aggregating Disney Lorcana TCG cards — card search, deck validation, deck stats, and Dreamborn/Pixelborn deck import/export.",
+  "version": "2.5.0",
   "websiteUrl": "https://github.com/danielenricocahall/lorcana-mcp",
   "repository": {
     "url": "https://github.com/danielenricocahall/lorcana-mcp",
@@ -12,8 +12,14 @@
   },
   "packages": [
     {
+      "registryType": "pypi",
+      "identifier": "lorcana-cards-mcp",
+      "version": "2.5.0",
+      "transport": { "type": "stdio" }
+    },
+    {
       "registryType": "oci",
-      "identifier": "ghcr.io/danielenricocahall/lorcana-mcp:2.4.0",
+      "identifier": "ghcr.io/danielenricocahall/lorcana-mcp:2.5.0",
       "transport": { "type": "stdio" }
     }
   ]

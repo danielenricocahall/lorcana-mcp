@@ -1,10 +1,4 @@
-from lorcana_mcp.server import create_server
-
-
-def main() -> None:
-    server = create_server()
-    server.run(transport="stdio")
-
+from lorcana_mcp.__main__ import main
 
 if __name__ == "__main__":
     main()

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib.metadata
 import tomllib
 from pathlib import Path
 from typing import Any
@@ -24,10 +25,24 @@ from lorcana_mcp.deck import (
 from lorcana_mcp.repository import InMemoryCardRepository
 from lorcana_mcp.rules import LORCANA_RULES
 
+DISTRIBUTION_NAME = "lorcana-cards-mcp"
+
 
 def _get_version() -> str:
-    pyproject = Path(__file__).parent.parent / "pyproject.toml"
-    return tomllib.loads(pyproject.read_text())["project"]["version"]
+    """Version of the running server.
+
+    Prefers installed distribution metadata, which is the only thing available
+    when the package is installed from a wheel (``uvx``/``pip``). Falls back to
+    reading pyproject.toml for source checkouts, where the distribution may not
+    be installed at all.
+    """
+    try:
+        return importlib.metadata.version(DISTRIBUTION_NAME)
+    except importlib.metadata.PackageNotFoundError:
+        pyproject = Path(__file__).parent.parent / "pyproject.toml"
+        if pyproject.is_file():
+            return tomllib.loads(pyproject.read_text())["project"]["version"]
+        return "unknown"
 
 
 def _build_repository(config: LorcanaConfig) -> InMemoryCardRepository:
