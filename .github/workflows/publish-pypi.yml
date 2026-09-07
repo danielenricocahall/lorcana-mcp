@@ -32,3 +32,7 @@ jobs:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          # 2.5.0 was uploaded manually; without this a release-triggered run
+          # fails on the duplicate instead of no-opping.
+          skip-existing: true
