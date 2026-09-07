@@ -610,9 +610,9 @@ wheels = [
 ]
 
 [[package]]
-name = "lorcana-mcp"
-version = "2.4.0"
-source = { virtual = "." }
+name = "lorcana-cards-mcp"
+version = "2.5.0"
+source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "fastmcp" },

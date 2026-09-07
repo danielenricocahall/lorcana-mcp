@@ -4,3 +4,6 @@ cards.json
 **/__pycache__
 scripts
 .mcpregistry_*
+*.egg-info/
+dist/
+
