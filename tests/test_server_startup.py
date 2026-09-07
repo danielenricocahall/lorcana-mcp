@@ -132,3 +132,12 @@ def test_version_is_consistent_across_pyproject_and_server_json():
             assert package["version"] == pyproject_version
         if package["registryType"] == "oci":
             assert package["identifier"].endswith(f":{pyproject_version}")
+
+
+def test_server_json_description_fits_mcp_registry_limit():
+    """The MCP Registry rejects descriptions over 100 characters with a 422."""
+    import json
+    from pathlib import Path
+
+    manifest = json.loads((Path(__file__).resolve().parents[1] / "server.json").read_text())
+    assert len(manifest["description"]) <= 100
